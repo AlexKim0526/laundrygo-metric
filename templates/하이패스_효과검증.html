@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>하이패스 효과 검증 결과</title>
+<style>
+:root{color-scheme:light;
+ --page:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;
+ --grid:#e1e0d9;--axis:#c3c2b7;--ring:rgba(11,11,11,.10);
+ --s1:#2a78d6;                      /* 2026 — categorical slot 1 (검증 통과) */
+ --s2:#eb6834;                      /* 2025 — categorical slot 2 */
+ --good:#0ca30c;--warn:#fab219;--crit:#d03b3b;--goodtxt:#006300;
+ --gooddim:rgba(12,163,12,.10);--critdim:rgba(208,59,59,.10);--warndim:rgba(250,178,25,.13);}
+@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){color-scheme:dark;
+ --page:#0d0d0d;--surface:#1a1a19;--ink:#fff;--ink2:#c3c2b7;--muted:#898781;
+ --grid:#2c2c2a;--axis:#383835;--ring:rgba(255,255,255,.10);
+ --s1:#3987e5;--s2:#d95926;--goodtxt:#0ca30c;
+ --gooddim:rgba(12,163,12,.16);--critdim:rgba(208,59,59,.18);--warndim:rgba(250,178,25,.16);}}
+:root[data-theme="dark"]{color-scheme:dark;
+ --page:#0d0d0d;--surface:#1a1a19;--ink:#fff;--ink2:#c3c2b7;--muted:#898781;
+ --grid:#2c2c2a;--axis:#383835;--ring:rgba(255,255,255,.10);
+ --s1:#3987e5;--s2:#d95926;--goodtxt:#0ca30c;
+ --gooddim:rgba(12,163,12,.16);--critdim:rgba(208,59,59,.18);--warndim:rgba(250,178,25,.16);}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;background:var(--page);
+ color:var(--ink);line-height:1.6;font-size:14px;word-break:keep-all;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1060px;margin:0 auto;padding:30px 22px 72px}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}
+h1{font-size:25px;font-weight:700;letter-spacing:-.4px;margin-top:6px;line-height:1.3}
+.lede{color:var(--ink2);font-size:13.5px;margin-top:8px;max-width:76ch}
+.card{background:var(--surface);border:1px solid var(--ring);border-radius:14px;padding:18px 20px;margin-bottom:14px}
+.card h3{font-size:14.5px;font-weight:700;margin-bottom:2px;letter-spacing:-.2px}
+.card .cap{color:var(--muted);font-size:12px;margin-bottom:14px;line-height:1.55}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0 16px}
+.tile{background:var(--surface);border:1px solid var(--ring);border-radius:14px;padding:15px 16px}
+.tile.hero{grid-column:span 2}
+.tile .lab{color:var(--ink2);font-size:12px;font-weight:600}
+.tile .val{font-size:27px;font-weight:700;margin-top:6px;letter-spacing:-.5px;line-height:1.1}
+.tile.hero .val{font-size:38px}
+.tile .dl{font-size:12.5px;font-weight:700;margin-top:5px}
+.tile .note{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.5}
+.up{color:var(--goodtxt)}.down{color:var(--crit)}.flat{color:var(--muted)}
+.legend{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.lg{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--ink2)}
+.sw{width:22px;height:3px;border-radius:2px;display:inline-block}
+.sw.dot{width:10px;height:10px;border-radius:50%}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.gridline{stroke:var(--grid);stroke-width:1}
+.baseline{stroke:var(--axis);stroke-width:1}
+.tick{fill:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+.dlab{font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.hit{cursor:crosshair}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 9px;text-align:right;border-bottom:1px solid var(--grid);
+ font-variant-numeric:tabular-nums;vertical-align:middle;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--ink2);font-weight:600;font-size:11.5px}
+tbody tr:hover{background:var(--page)}
+td.mo{font-weight:700}
+.tw{overflow-x:auto}
+.box{background:var(--surface);border:1px solid var(--ring);border-left:3px solid var(--s1);border-radius:12px;
+ padding:15px 17px;margin-bottom:12px}
+.box.bad{border-left-color:var(--crit)}.box.warnb{border-left-color:var(--warn)}
+.box h4{font-size:14px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.box p{color:var(--ink2);font-size:13.3px}.box p+p{margin-top:8px}
+.box b{color:var(--ink)}
+.pill{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;border:1px solid var(--ring);
+ color:var(--ink2);background:var(--page);white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;
+ padding:2px 9px;border-radius:20px;white-space:nowrap}
+.badge.g{background:var(--gooddim);color:var(--goodtxt)}
+.badge.b{background:var(--critdim);color:var(--crit)}
+.badge i{font-style:normal;font-size:10px}
+.drop{border:1.5px dashed var(--axis);border-radius:14px;background:var(--surface);
+ padding:20px 22px;margin-top:20px;transition:border-color .12s,background .12s}
+.drop.over{border-color:var(--s1);background:var(--page);border-style:solid}
+.dz-title{font-size:14.5px;font-weight:700;margin-bottom:4px}
+.dz-sub{color:var(--ink2);font-size:13px}
+.dz-row{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:13px}
+.dz-note{color:var(--muted);font-size:12px;margin-top:11px;line-height:1.6}
+#msg{font-size:12.5px;font-weight:600}
+#msg.ok{color:var(--goodtxt)} #msg.err{color:var(--crit)}
+.btn{display:inline-block;font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;
+ border:1px solid var(--ink);background:var(--ink);color:var(--page);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink2);border-color:var(--ring)}
+.btn.ghost:hover{border-color:var(--axis);color:var(--ink)}
+textarea{width:100%;height:120px;margin:10px 0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+ font-size:11.5px;padding:10px;border:1px solid var(--ring);border-radius:8px;
+ background:var(--page);color:var(--ink);resize:vertical}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;background:var(--page);
+ border:1px solid var(--ring);border-radius:5px;padding:1px 5px}
+details.alt{margin-top:14px;border-top:1px solid var(--grid);padding-top:12px}
+details.alt summary{font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer}
+.defsum{font-size:14px;font-weight:700;cursor:pointer;color:var(--ink);list-style:none}
+.defsum::-webkit-details-marker{display:none}
+.defsum::before{content:'▸ ';color:var(--muted)}
+details[open] .defsum::before{content:'▾ '}
+footer{margin-top:36px;padding-top:18px;border-top:1px solid var(--grid);color:var(--muted);font-size:12px;line-height:1.7}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--surface);font-size:11.5px;
+ padding:7px 10px;border-radius:7px;opacity:0;transition:opacity .1s;z-index:50;white-space:pre;
+ font-variant-numeric:tabular-nums;line-height:1.5}
+@media(max-width:880px){.tiles{grid-template-columns:repeat(2,1fr)}.tile.hero{grid-column:span 2}
+ .charts{grid-template-columns:1fr}.wrap{padding:22px 14px 56px}}
+
+.verdict{background:var(--surface);border:1px solid var(--ring);border-left:4px solid var(--crit);
+ border-radius:14px;padding:20px 22px;margin:20px 0}
+.verdict h2{font-size:19px;font-weight:700;margin-bottom:8px;letter-spacing:-.3px}
+.verdict p{color:var(--ink2);font-size:14px}
+.rng{display:flex;align-items:center;gap:10px;margin:16px 0 4px;flex-wrap:wrap}
+h2.sec{font-size:17px;font-weight:700;margin:34px 0 4px;letter-spacing:-.3px}
+p.sub{color:var(--ink2);font-size:13.5px;margin-bottom:14px;max-width:78ch}
+ul{margin:10px 0 0 18px;color:var(--ink2);font-size:13.5px} li{margin-bottom:6px}
+li b,p b{color:var(--ink)}
+.step{display:grid;grid-template-columns:26px 1fr;gap:12px;margin-bottom:14px;align-items:start}
+.num{width:26px;height:26px;border-radius:50%;background:var(--ink);color:var(--page);
+ display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.num.ok{background:var(--good)} .num.no{background:var(--crit)}
+.step h4{font-size:14px;font-weight:700;margin-bottom:3px}
+.step p{color:var(--ink2);font-size:13.3px}
+</style></head><body><div class="wrap">
+<div class="eyebrow">런드리고 · 하이패스 과제</div>
+<h1>첫 수거신청 UX 개선(하이패스) 효과 검증</h1>
+<p class="lede">2025-09-08 iOS 배포 · 2025-10-13 Android 배포. 무작위 배정이 아니라
+<b>앱 버전 순차 배포</b>였고, 배정 로그는 Snowflake에 없습니다.
+관측 설계 네 가지를 시도했고 그중 <b>하나만</b> 자체 검정을 통과했습니다.</p>
+
+<div class="verdict">
+<h2>결론 — 첫 주문율을 의미 있게 올렸다는 증거는 없습니다</h2>
+<p>가장 깨끗한 추정치는 <b>+1.43%p</b>, 95% 신뢰구간 <b>−3.35%p ~ +6.21%p</b> 입니다.
+0을 포함하므로 <b>효과가 있다고 말할 수 없고</b>, 동시에 없다고도 단정할 수 없습니다.
+다만 Amplitude 대시보드가 시사한 <b>+8~12%p 급 효과는 이 범위 밖</b>이라 <b>배제됩니다.</b></p>
+<div class="rng"><span class="badge b"><i>▼</i>−3.35%p</span>
+<span style="color:var(--muted)">…</span>
+<span class="badge g"><i>●</i>+1.43%p 추정</span>
+<span style="color:var(--muted)">…</span>
+<span class="badge b"><i>▲</i>+6.21%p</span></div>
+</div>
+
+<h2 class="sec">근거 — 유일하게 통과한 비교</h2>
+<p class="sub">배포 주에는 <b>같은 주 · 같은 OS</b> 안에 구버전 사용자와 신버전 사용자가 공존합니다.
+계절·마케팅·요일이 모두 같은 상태에서 UX만 다른 유일한 지점입니다.</p>
+<div class="tw"><table><thead><tr><th>구간</th><th>구버전</th><th>신버전(하이패스)</th><th>차이</th><th style="text-align:left">95% CI</th></tr></thead><tbody>
+<tr><td class="mo">iOS · 9/8 주</td><td>31.19% <span style="color:var(--muted)">(218명)</span></td>
+<td>32.72% <span style="color:var(--muted)">(1,464명)</span></td><td>+1.53%p</td><td style="text-align:left;color:var(--ink2)">±6.60%p</td></tr>
+<tr><td class="mo">Android · 10/13 주</td><td>47.06% <span style="color:var(--muted)">(255명)</span></td>
+<td>48.39% <span style="color:var(--muted)">(903명)</span></td><td>+1.33%p</td><td style="text-align:left;color:var(--ink2)">±6.94%p</td></tr>
+<tr style="border-top:2px solid var(--axis)"><td class="mo">역분산 가중 통합</td><td colspan="2" style="color:var(--muted);text-align:right">두 구간을 합치면</td>
+<td><b>+1.43%p</b></td><td style="text-align:left"><b>±4.78%p</b></td></tr>
+</tbody></table></div>
+<p class="sub" style="margin-top:12px">남는 한계: 구버전에 남아 있던 사람은 배포 주 <b>앞쪽 요일</b>에 가입한 사람들입니다.
+요일 효과가 섞일 수 있으나, "업데이트를 안 하는 성향" 같은 큰 편향은 아닙니다.</p>
+
+<h2 class="sec">배포는 계단처럼 일어났습니다</h2>
+<p class="sub">컷 날짜가 맞는지 확인한 결과입니다. iOS는 9/8 주에 <b>5.8% → 89.0%</b>,
+Android는 10/13 주에 <b>2.0% → 80.3%</b>. 서버 플래그가 아니라 실제 버전 배포였고,
+따라서 <b>9/8·10/13 컷은 정확</b>합니다.</p>
+<div class="card"><div class="legend">
+<span class="lg"><i class="sw" style="background:var(--s1)"></i>iOS</span>
+<span class="lg"><i class="sw" style="background:var(--s2)"></i>Android</span></div>
+<div id="c1"></div></div>
+
+<h2 class="sec">왜 다른 설계는 전부 실패했나</h2>
+<div class="step"><div class="num no">1</div><div><h4>단순 전후 비교 — 못 씁니다</h4>
+<p>이 기간 가입자가 <b>9월 11,875명 → 10월 26,451명</b>으로 2배 넘게 뜁니다.
+유입 규모가 이만큼 바뀌면 전후 비교는 아무 의미가 없습니다.</p></div></div>
+<div class="step"><div class="num no">2</div><div><h4>시간 불연속(RD) — 못 씁니다</h4>
+<p>RD는 "컷에서 딱 바뀐다"를 가정하는데, 실제로는 앱 업데이트 속도만큼 서서히 처리군이 늘었습니다.
+다만 위 곡선을 보면 램프가 <b>일주일</b>로 짧아, 이건 치명적이진 않았습니다.</p></div></div>
+<div class="step"><div class="num no">3</div><div><h4>iOS vs Android 이중차분 — <b>자체 검정에 걸려 탈락</b></h4>
+<p>아무 일도 없던 날에 건 <b>위약 컷이 +2.88%p로 "유의"</b>하게 나왔습니다.
+가짜 컷 9개 중 <b>5개</b>가 유의로 나왔습니다 — 5%여야 할 오탐률이 <b>56%</b>입니다.
+사전 창을 어디로 잡느냐에 따라 결과가 −1.50 ~ −4.60%p로 흔들립니다.</p></div></div>
+<div class="step"><div class="num ok">4</div><div><h4>같은 주 · 같은 OS · 구 vs 신 — <b>통과</b></h4>
+<p>위 표. 표본이 작아 정밀도는 낮지만, 편향이 가장 적습니다.</p></div></div>
+
+<h2 class="sec">이중차분이 깨진 이유 — 두 OS의 유입 급증 시점이 어긋났습니다</h2>
+<div class="card"><div class="legend">
+<span class="lg"><i class="sw" style="background:var(--s1)"></i>iOS 주간 가입자</span>
+<span class="lg"><i class="sw" style="background:var(--s2)"></i>Android 주간 가입자</span></div>
+<div id="c2"></div></div>
+<ul>
+<li><b>Android</b>는 8/18~8/25에 유입이 +50% 늘면서 전환율이 <b>22.4%·20.8%</b>로 붕괴했다가 9월에 회복합니다.
+원안의 사전 창이 하필 그 골짜기 위에 놓였습니다.</li>
+<li><b>iOS</b>는 <b>9/1</b>부터 유입이 +40% 급증합니다 — 배포 <b>1주 전</b>입니다.
+그 주의 하이패스 채택률은 <b>5.82%</b>였으므로, 이 급증은 하이패스가 아니라 <b>마케팅</b>입니다.</li>
+<li>따라서 "iOS 첫 주문자 수가 +48% 늘었다"는 것도 하이패스의 공으로 볼 수 없습니다.</li>
+</ul>
+
+<h2 class="sec">별건 — Android 로깅 장애로 보이는 흔적</h2>
+<p class="sub">하이패스와 무관하지만 확인이 필요합니다. 8/11~9/15 Android 가입자 중
+<b>앱 버전 기록이 없는 비율이 30% → 70%대</b>로 뜁니다. 그리고 그 집단의 전환율이
+평소 6%대에서 <b>16~20%</b>로 올라갑니다 — 실제로 앱을 쓰는 사람들이 결측 쪽으로 흘러들어갔다는 뜻입니다.</p>
+<div class="tw"><table><thead><tr><th>주</th><th>Android 가입</th><th>전체 전환율</th><th>버전기록 결측</th><th>결측군 전환율</th></tr></thead><tbody>
+<tr><td class="mo">7/28</td><td>926</td><td>29.48%</td><td>30.8%</td><td>6.32%</td></tr>
+<tr><td class="mo">8/11</td><td>821</td><td>30.82%</td><td><b>59.8%</b></td><td><b>21.18%</b></td></tr>
+<tr><td class="mo">8/18</td><td>1,051</td><td><b>22.36%</b></td><td><b>71.6%</b></td><td><b>16.22%</b></td></tr>
+<tr><td class="mo">8/25</td><td>1,252</td><td><b>20.77%</b></td><td><b>74.6%</b></td><td><b>16.06%</b></td></tr>
+<tr><td class="mo">9/15</td><td>1,016</td><td>31.99%</td><td><b>75.9%</b></td><td>25.81%</td></tr>
+<tr><td class="mo">9/22</td><td>1,018</td><td>32.12%</td><td>34.8%</td><td>9.60%</td></tr>
+</tbody></table></div>
+<p class="sub" style="margin-top:12px">같은 기간 Android <b>전체</b> 전환율도 무너졌습니다.
+8월 중순 Android 릴리스가 <b>로깅과 전환을 동시에</b> 건드렸을 가능성이 있어 개발팀 확인이 필요합니다.</p>
+
+<h2 class="sec">다음에 할 일</h2>
+<div class="box"><h4><span class="pill">1</span>다음 개선은 진짜 A/B로</h4>
+<p>서버에서 배정하고 <b>배정 로그를 DB에 남기면</b> 이 모든 보정이 필요 없어집니다.
+회원가입수가 어떻게 변하든 무작위 배정이 알아서 상쇄합니다.
+지금 규모(월 2~3만 가입)면 <b>4주에 ±1.5%p</b>까지 잡힙니다.</p></div>
+<div class="box"><h4><span class="pill">2</span>확인 요청 두 가지</h4>
+<p>· <b>9/1 전후 iOS 광고·제휴 집행</b>이 있었는지 — 이중차분이 깨진 직접 원인입니다.<br>
+· <b>8월 중순 Android 릴리스</b>에서 버전 로깅이 끊겼는지.</p></div>
+<div class="box"><h4><span class="pill">3</span>Amplitude 대시보드 숫자는 인용하지 마세요</h4>
+<p>구·신 퍼널의 <b>시작 이벤트가 다릅니다</b>(<code>walkthrough_stage_viewed</code> vs
+<code>walkthrough_hipass-stage_viewed</code>). 그리고 UX가 안 바뀐 구버전끼리 비교해도
+워크스루→가입이 <b>+11.6%p</b> 차이 납니다 — 그 단계 숫자는 신뢰할 수 없습니다.</p></div>
+
+<footer>분석 근거 · 43~47번 쿼리 (Snowflake) · 가입 코호트 기준 7일 내 첫 수거신청 ·
+모수는 전수(LAUNDRY24 계정만 제외, 탈퇴 회원 포함)<br>
+Amplitude <i>Hi-pass A/B test Dashboard</i> 대조 확인 · 생성 <span id="gen"></span></footer>
+</div>
+<script>
+const D = {"weeks": ["2025-06-30", "2025-07-07", "2025-07-14", "2025-07-21", "2025-07-28", "2025-08-04", "2025-08-11", "2025-08-18", "2025-08-25", "2025-09-01", "2025-09-08", "2025-09-15", "2025-09-22", "2025-09-29", "2025-10-06", "2025-10-13", "2025-10-20", "2025-10-27", "2025-11-03", "2025-11-10", "2025-11-17", "2025-11-24", "2025-12-01", "2025-12-08", "2025-12-15", "2025-12-22", "2025-12-29"], "adopt": {"iOS": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.82, 89.01, 99.66, 99.34, 100.0, 99.86, 99.9, 99.88, 100.0, 99.95, 99.93, 99.93, 99.91, 100.0, 100.0, 99.86, 100.0, 100.0], "Android": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 80.34, 98.49, 99.46, 99.45, 99.27, 99.65, 99.55, 99.65, 99.16, 99.37, 99.8, 100.0]}, "join": {"iOS": [1198.0, 1207.0, 1254.0, 1160.0, 1161.0, 1082.0, 1043.0, 1083.0, 1142.0, 1596.0, 1754.0, 1652.0, 1685.0, 1462.0, 1972.0, 2530.0, 5276.0, 5800.0, 4917.0, 3398.0, 3287.0, 2621.0, 2532.0, 1926.0, 1827.0, 2076.0, 862.0], "Android": [910.0, 935.0, 834.0, 746.0, 926.0, 863.0, 821.0, 1051.0, 1252.0, 1176.0, 1148.0, 1016.0, 1018.0, 929.0, 1244.0, 1578.0, 4292.0, 4825.0, 4479.0, 2675.0, 2357.0, 1908.0, 1572.0, 1323.0, 1449.0, 1780.0, 735.0]}, "rate": {"iOS": [32.64, 35.63, 35.17, 33.71, 36.26, 33.46, 33.17, 35.92, 34.06, 29.07, 31.64, 35.35, 36.02, 29.48, 35.55, 40.71, 31.12, 34.14, 44.8, 44.08, 42.26, 42.62, 42.38, 42.58, 39.14, 32.9, 36.89], "Android": [28.57, 30.05, 28.06, 30.56, 29.48, 25.72, 30.82, 22.36, 20.77, 24.91, 26.05, 31.99, 32.12, 27.66, 32.15, 37.71, 24.72, 26.78, 40.5, 40.9, 35.98, 35.27, 36.64, 35.9, 32.85, 28.37, 28.3]}};
+document.getElementById('gen').textContent = new Date().toISOString().slice(0,10);
+function chart(el, series, fmtY, cutIdx, yMax) {
+  const W=760,H=250,L=52,R=16,T=14,B=34, MS=D.weeks;
+  const vals=[].concat(...Object.values(series)).filter(v=>v!=null);
+  let hi = yMax || Math.max(...vals)*1.08, lo=0;
+  const step = hi>200 ? Math.pow(10,Math.floor(Math.log10(hi)))* (hi/Math.pow(10,Math.floor(Math.log10(hi)))>5?2:1) : 25;
+  const tk=[]; for(let v=0; v<=hi+1e-9; v+=step) tk.push(v);
+  const x=i=>L+i*(W-L-R)/(MS.length-1), y=v=>T+(H-T-B)*(1-(v-lo)/(hi-lo));
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="주별 추이"><g>`;
+  tk.forEach(t=>{s+=`<line class="gridline" x1="${L}" y1="${y(t).toFixed(1)}" x2="${W-R}" y2="${y(t).toFixed(1)}"/>`
+    +`<text class="tick" x="${L-8}" y="${y(t).toFixed(1)}" text-anchor="end" dominant-baseline="middle">${fmtY(t)}</text>`;});
+  MS.forEach((m,i)=>{ if(i%3) return;
+    s+=`<text class="tick" x="${x(i).toFixed(1)}" y="${H-B+17}" text-anchor="middle">${m.slice(5).replace('-','/')}</text>`;});
+  cutIdx.forEach(([ci,lab,col])=>{
+    s+=`<line x1="${x(ci).toFixed(1)}" y1="${T}" x2="${x(ci).toFixed(1)}" y2="${H-B}"
+      stroke="${col}" stroke-width="1.5" stroke-dasharray="4 3"/>`
+     +`<text class="dlab" x="${x(ci)+5}" y="${T+11}" fill="${col}">${lab}</text>`;});
+  Object.entries(series).forEach(([k,v],si)=>{
+    const col= k==='iOS'?'var(--s1)':'var(--s2)';
+    let d='',st=false;
+    v.forEach((p,i)=>{ if(p==null){st=false;return;}
+      d+=(st?'L':'M')+x(i).toFixed(1)+' '+y(p).toFixed(1)+' '; st=true;});
+    s+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    v.forEach((p,i)=>{ if(p==null) return;
+      s+=`<circle cx="${x(i).toFixed(1)}" cy="${y(p).toFixed(1)}" r="3" fill="${col}" stroke="var(--surface)" stroke-width="1.5"/>`;});
+  });
+  s+='</g></svg>';
+  document.getElementById(el).innerHTML=s;
+}
+const iCut = D.weeks.indexOf('2025-09-08'), aCut = D.weeks.indexOf('2025-10-13');
+chart('c1', D.adopt, v=>v+'%', [[iCut,'iOS 9/8','var(--s1)'],[aCut,'AOS 10/13','var(--s2)']], 100);
+chart('c2', D.join, v=>(v/1000).toFixed(0)+'k', [[iCut,'iOS 9/8','var(--s1)'],[aCut,'AOS 10/13','var(--s2)']]);
+</script></body></html>

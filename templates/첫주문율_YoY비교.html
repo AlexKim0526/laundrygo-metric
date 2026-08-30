@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>첫 주문율 · 2회차 주문율 YoY 비교</title>
+<style>
+:root{color-scheme:light;
+ --page:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;
+ --grid:#e1e0d9;--axis:#c3c2b7;--ring:rgba(11,11,11,.10);
+ --s1:#2a78d6;                      /* 2026 — categorical slot 1 (검증 통과) */
+ --s2:#eb6834;                      /* 2025 — categorical slot 2 */
+ --good:#0ca30c;--warn:#fab219;--crit:#d03b3b;--goodtxt:#006300;
+ --gooddim:rgba(12,163,12,.10);--critdim:rgba(208,59,59,.10);--warndim:rgba(250,178,25,.13);}
+@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){color-scheme:dark;
+ --page:#0d0d0d;--surface:#1a1a19;--ink:#fff;--ink2:#c3c2b7;--muted:#898781;
+ --grid:#2c2c2a;--axis:#383835;--ring:rgba(255,255,255,.10);
+ --s1:#3987e5;--s2:#d95926;--goodtxt:#0ca30c;
+ --gooddim:rgba(12,163,12,.16);--critdim:rgba(208,59,59,.18);--warndim:rgba(250,178,25,.16);}}
+:root[data-theme="dark"]{color-scheme:dark;
+ --page:#0d0d0d;--surface:#1a1a19;--ink:#fff;--ink2:#c3c2b7;--muted:#898781;
+ --grid:#2c2c2a;--axis:#383835;--ring:rgba(255,255,255,.10);
+ --s1:#3987e5;--s2:#d95926;--goodtxt:#0ca30c;
+ --gooddim:rgba(12,163,12,.16);--critdim:rgba(208,59,59,.18);--warndim:rgba(250,178,25,.16);}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;background:var(--page);
+ color:var(--ink);line-height:1.6;font-size:14px;word-break:keep-all;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1060px;margin:0 auto;padding:30px 22px 72px}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}
+h1{font-size:25px;font-weight:700;letter-spacing:-.4px;margin-top:6px;line-height:1.3}
+.lede{color:var(--ink2);font-size:13.5px;margin-top:8px;max-width:76ch}
+.card{background:var(--surface);border:1px solid var(--ring);border-radius:14px;padding:18px 20px;margin-bottom:14px}
+.card h3{font-size:14.5px;font-weight:700;margin-bottom:2px;letter-spacing:-.2px}
+.card .cap{color:var(--muted);font-size:12px;margin-bottom:14px;line-height:1.55}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0 16px}
+.tile{background:var(--surface);border:1px solid var(--ring);border-radius:14px;padding:15px 16px}
+.tile.hero{grid-column:span 2}
+.tile .lab{color:var(--ink2);font-size:12px;font-weight:600}
+.tile .val{font-size:27px;font-weight:700;margin-top:6px;letter-spacing:-.5px;line-height:1.1}
+.tile.hero .val{font-size:38px}
+.tile .dl{font-size:12.5px;font-weight:700;margin-top:5px}
+.tile .note{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.5}
+.up{color:var(--goodtxt)}.down{color:var(--crit)}.flat{color:var(--muted)}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:4px 0 16px}
+.chip{font-size:12.5px;font-weight:600;padding:6px 13px;border-radius:20px;border:1px solid var(--ring);
+ background:var(--surface);color:var(--ink2);cursor:pointer;font-family:inherit}
+.chip:hover{border-color:var(--axis);color:var(--ink)}
+.chip.on{background:var(--ink);color:var(--page);border-color:var(--ink)}
+.sep{flex-basis:100%;height:0}
+.legend{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.lg{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--ink2)}
+.sw{width:22px;height:3px;border-radius:2px;display:inline-block}
+.sw.dot{width:10px;height:10px;border-radius:50%}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.gridline{stroke:var(--grid);stroke-width:1}
+.baseline{stroke:var(--axis);stroke-width:1}
+.tick{fill:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+.dlab{font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.hit{cursor:crosshair}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 9px;text-align:right;border-bottom:1px solid var(--grid);
+ font-variant-numeric:tabular-nums;vertical-align:middle;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--ink2);font-weight:600;font-size:11.5px}
+tbody tr:hover{background:var(--page)}
+td.mo{font-weight:700}
+.tw{overflow-x:auto}
+td.memo{white-space:normal;max-width:200px;line-height:1.45}
+.box{background:var(--surface);border:1px solid var(--ring);border-left:3px solid var(--s1);border-radius:12px;
+ padding:15px 17px;margin-bottom:12px}
+.box.bad{border-left-color:var(--crit)}.box.warnb{border-left-color:var(--warn)}
+.box h4{font-size:14px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.box p{color:var(--ink2);font-size:13.3px}.box p+p{margin-top:8px}
+.box b{color:var(--ink)}
+.pill{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;border:1px solid var(--ring);
+ color:var(--ink2);background:var(--page);white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;
+ padding:2px 9px;border-radius:20px;white-space:nowrap}
+.badge.g{background:var(--gooddim);color:var(--goodtxt)}
+.badge.b{background:var(--critdim);color:var(--crit)}
+.badge i{font-style:normal;font-size:10px}
+.drop{border:1.5px dashed var(--axis);border-radius:14px;background:var(--surface);
+ padding:20px 22px;margin-top:20px;transition:border-color .12s,background .12s}
+.drop.over{border-color:var(--s1);background:var(--page);border-style:solid}
+.dz-title{font-size:14.5px;font-weight:700;margin-bottom:4px}
+.dz-sub{color:var(--ink2);font-size:13px}
+.dz-row{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:13px}
+.dz-note{color:var(--muted);font-size:12px;margin-top:11px;line-height:1.6}
+#msg{font-size:12.5px;font-weight:600}
+#msg.ok{color:var(--goodtxt)} #msg.err{color:var(--crit)}
+.btn{display:inline-block;font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;
+ border:1px solid var(--ink);background:var(--ink);color:var(--page);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink2);border-color:var(--ring)}
+.btn.ghost:hover{border-color:var(--axis);color:var(--ink)}
+textarea{width:100%;height:120px;margin:10px 0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+ font-size:11.5px;padding:10px;border:1px solid var(--ring);border-radius:8px;
+ background:var(--page);color:var(--ink);resize:vertical}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;background:var(--page);
+ border:1px solid var(--ring);border-radius:5px;padding:1px 5px}
+details.alt{margin-top:14px;border-top:1px solid var(--grid);padding-top:12px}
+details.alt summary{font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer}
+.defsum{font-size:14px;font-weight:700;cursor:pointer;color:var(--ink);list-style:none}
+.defsum::-webkit-details-marker{display:none}
+.defsum::before{content:'▸ ';color:var(--muted)}
+details[open] .defsum::before{content:'▾ '}
+footer{margin-top:36px;padding-top:18px;border-top:1px solid var(--grid);color:var(--muted);font-size:12px;line-height:1.7}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--surface);font-size:11.5px;
+ padding:7px 10px;border-radius:7px;opacity:0;transition:opacity .1s;z-index:50;white-space:pre;
+ font-variant-numeric:tabular-nums;line-height:1.5}
+@media(max-width:880px){.tiles{grid-template-columns:repeat(2,1fr)}.tile.hero{grid-column:span 2}
+ .charts{grid-template-columns:1fr}.wrap{padding:22px 14px 56px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="eyebrow">런드리고 · 북극성 지표</div>
+<h1>첫 주문율 · 2회차 주문율 YoY 비교</h1>
+<p class="lede"><b>첫 주문율</b>(가입 후 7일 내 첫 수거신청)과
+<b>2회차 주문율</b>(첫 주문 후 30일 내 두 번째 수거신청)을 전년과 견줍니다.
+자유·구독 <b>구분 없이</b> 한 사람을 한 번만 셉니다.
+<code>42_첫주문율_YoY.sql</code> 결과 CSV를 <b>끌어다 놓으면</b> 갱신됩니다.</p>
+
+<div class="tiles" id="tiles"></div>
+<div class="bar" id="bar"></div>
+<div id="alerts"></div>
+<div id="body"></div>
+
+<div class="card" style="margin-top:18px">
+<details id="defs">
+<summary class="defsum">정의 — 이 숫자가 정확히 무엇인가</summary>
+<div id="defbody" style="margin-top:14px"></div>
+</details>
+</div>
+
+<div id="drop" class="drop">
+  <div class="dz-title">결과 CSV 올리기</div>
+  <p class="dz-sub"><code>42_첫주문율_YoY.sql</code> 결과를 CSV로 저장한 뒤
+    <b>여기에 끌어다 놓거나</b> 아래 버튼으로 선택하세요.</p>
+  <div class="dz-row">
+    <label class="btn" for="file">CSV 파일 선택</label>
+    <input type="file" id="file" accept=".csv,text/csv" hidden>
+    <button class="btn ghost" onclick="resetData()">비우기</button>
+    <span id="msg"></span>
+  </div>
+  <div class="dz-note">UTF-8 · CP949(엑셀 한글) 자동 인식 · <b>컬럼 이름</b>으로 찾으므로 순서는 상관없습니다.
+      2회차 컬럼이 없는 옛 CSV 도 그대로 열립니다.</div>
+  <details class="alt"><summary>파일 대신 붙여넣기</summary>
+    <textarea id="csv" placeholder="연도,월,기간,신규 가입자(명),첫 주문자 수(명),첫 주문율(%),비고&#10;2025,1,2025-01,..."></textarea>
+    <button class="btn" onclick="loadText(document.getElementById('csv').value)">붙여넣기 갱신</button>
+  </details>
+</div>
+
+<footer id="foot"></footer>
+</div>
+<div class="tip" id="tip"></div>
+<script>
+const RAW = [];
+/* ── 빌드 시 구워 넣은 데이터 ────────────────────────────────────
+   build_boards.py 가 아래 문자열에 CSV 를 base64 로 넣습니다.
+   비어 있으면(=직접 여는 경우) 지금까지처럼 업로드해서 씁니다.
+   BUILD_ID 가 바뀌면 지난번 업로드 캐시를 버립니다 — 새로 배포한 데이터가
+   옛 캐시에 가려지는 것을 막기 위해서입니다. */
+const BUILD_ID = '__BUILD_ID__';
+const BAKED = (function (b) {
+  if (!b) return '';
+  try {
+    const bin = atob(b), u = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    return new TextDecoder('utf-8').decode(u);
+  } catch (e) { return ''; }
+})('__BAKED_CSV__');
+
+let DATA = RAW.slice();
+
+const $ = id => document.getElementById(id);
+const nf = n => n == null ? '—' : Math.round(n).toLocaleString('ko-KR');
+const p2 = v => v == null ? '—' : v.toFixed(2) + '%';
+const pp = v => v == null ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(2) + '%p';
+const pctc = v => v == null ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(1) + '%';
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* 이 화면이 다루는 지표 두 개. 관측 종료 시점이 서로 다릅니다. */
+const METRICS = {
+  first: { key: 'rate', num: 'k',  den: 'n',
+           lab: '첫 주문율', full: '첫 주문율 (%)',
+           denLab: '신규 가입자', numLab: '첫 주문자',
+           cap: '가입 후 <b>7일</b> 안에 첫 수거신청을 한 <b>사람</b>의 비율' },
+  second:{ key: 'rate2', num: 'k2', den: 'k',
+           lab: '2회차 주문율', full: '2회차 주문율 (%)',
+           denLab: '첫 주문자', numLab: '2회차 주문자',
+           cap: '<b>첫 주문일</b>부터 <b>30일</b> 안에 두 번째 수거신청까지 간 비율. 분모는 가입자가 아니라 <b>첫 주문자</b>입니다' }
+};
+let M = 'first';
+const has2 = () => DATA.some(r => r.rate2 != null);
+
+/* 연도 두 개를 자동으로 잡는다 — 작은 쪽이 기준(전년), 큰 쪽이 이번 해 */
+function years() { return [...new Set(DATA.map(r => r.yr))].sort((a, b) => a - b); }
+function months() { return [...new Set(DATA.map(r => r.mo))].sort((a, b) => a - b); }
+const cell = (y, m) => DATA.find(r => r.yr === y && r.mo === m) || null;
+
+/* ── 축 눈금: 사람이 읽는 숫자로 떨어뜨린다 ────────────────────── */
+function ticks(lo, hi, want) {
+  const raw = (hi - lo) / want, mag = Math.pow(10, Math.floor(Math.log10(raw || 1)));
+  const step = [1, 2, 2.5, 5, 10].map(s => s * mag).find(s => s >= raw) || 10 * mag;
+  const a = Math.floor(lo / step) * step, out = [];
+  for (let v = a; v <= hi + step * 1e-6; v += step) out.push(+v.toFixed(10));
+  return out;
+}
+
+/* ── 선 차트 (2계열) ──────────────────────────────────────────────
+   비율 계열이라 0 에서 시작하지 않습니다. 막대였다면 반드시 0 기준이어야
+   하지만, 선은 변화의 모양을 보는 것이라 데이터 범위에 맞춥니다.
+   대신 축 눈금을 반드시 표시해 "0 부터인 척" 하지 않게 합니다. */
+function lineChart(key, fmtV, unit) {
+  const MS = months(), YS = years(), W = 640, H = 250,
+        L = 52, R = 54, T = 16, B = 30;
+  const vals = [];
+  YS.forEach(y => MS.forEach(m => { const c = cell(y, m); if (c && c[key] != null) vals.push(c[key]); }));
+  if (vals.length < 2) return '<p style="color:var(--muted);font-size:13px">그릴 값이 부족합니다.</p>';
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (key === 'rate' || key === 'rate2') {   /* 비율 — 데이터 범위에 맞춘다 (0 기준 아님) */
+    const pad = (hi - lo || hi * 0.1 || 1) * 0.28; lo -= pad; hi += pad;
+  } else {                                   /* 건수 — 0 부터. 위쪽 여백은 8% 만 */
+    lo = 0; hi = hi * 1.08;
+  }
+  const tk = ticks(lo, hi, 4).filter(t => t >= lo - 1e-9 && t <= hi + 1e-9);
+  if (tk.length) { lo = Math.min(lo, tk[0]); hi = Math.max(hi, tk[tk.length - 1]); }
+  const x = i => L + (MS.length === 1 ? (W - L - R) / 2 : i * (W - L - R) / (MS.length - 1));
+  const y = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(unit)} 월별 2개 연도 비교">`;
+  tk.forEach(t => { s += `<line class="gridline" x1="${L}" y1="${y(t).toFixed(1)}" x2="${W - R}" y2="${y(t).toFixed(1)}"/>`
+    + `<text class="tick" x="${L - 8}" y="${y(t).toFixed(1)}" text-anchor="end" dominant-baseline="middle">${fmtV(t, 1)}</text>`; });
+  MS.forEach((m, i) => { s += `<text class="tick" x="${x(i).toFixed(1)}" y="${H - B + 17}" text-anchor="middle">${m}월</text>`; });
+
+  const ends = [];
+  YS.forEach((yr, si) => {
+    const col = si === 0 ? 'var(--s2)' : 'var(--s1)';
+    let d = '', started = false, last = null, lastI = -1;
+    MS.forEach((m, i) => {
+      const c = cell(yr, m), v = c ? c[key] : null;
+      if (v == null) { started = false; return; }
+      d += (started ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1) + ' ';
+      started = true; last = v; lastI = i;
+    });
+    s += `<path d="${d}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    MS.forEach((m, i) => {
+      const c = cell(yr, m), v = c ? c[key] : null; if (v == null) return;
+      /* 겹치는 마크에는 2px 서피스 링 */
+      s += `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="4.5" fill="${col}"
+             stroke="var(--surface)" stroke-width="2"/>`;
+    });
+    if (last != null) ends.push({ yr, col, xi: lastI, yv: y(last) });
+  });
+  /* 직접 라벨 — 마지막 점에만. 두 계열이 가까우면 세로로 벌린다 */
+  ends.sort((a, b) => a.yv - b.yv);
+  for (let i = 1; i < ends.length; i++)
+    if (ends[i].yv - ends[i - 1].yv < 14) ends[i].yv = ends[i - 1].yv + 14;
+  ends.forEach(e => { s += `<text class="dlab" x="${x(e.xi) + 9}" y="${e.yv.toFixed(1)}"
+      fill="${e.col}" dominant-baseline="middle">${e.yr}</text>`; });
+  /* 히트 영역 — 마크보다 넓게 */
+  MS.forEach((m, i) => {
+    const w = (W - L - R) / Math.max(1, MS.length - 1);
+    s += `<rect class="hit" x="${(x(i) - w / 2).toFixed(1)}" y="${T}" width="${w.toFixed(1)}"
+      height="${H - T - B}" fill="transparent" data-k="${key}" data-m="${m}"/>`;
+  });
+  s += '</svg>';
+  return s;
+}
+
+/* ── 차이 막대 (%p) — 0 기준, 발산형 ──────────────────────────── */
+function deltaChart() {
+  const MS = months(), YS = years(), W = 640, H = 218, L = 52, R = 22, T = 18, B = 34;
+  if (YS.length < 2) return '<p style="color:var(--muted);font-size:13px">두 해가 모두 있어야 그립니다.</p>';
+  const [yp, yc] = [YS[0], YS[YS.length - 1]];
+  const K = METRICS[M].key;
+  const ds = MS.map(m => {
+    const a = cell(yp, m), b = cell(yc, m);
+    return (a && b && a[K] != null && b[K] != null) ? +(b[K] - a[K]).toFixed(2) : null;
+  });
+  const ok = ds.filter(v => v != null);
+  if (!ok.length) return '<p style="color:var(--muted);font-size:13px">비교할 값이 없습니다.</p>';
+  /* 0 을 가운데 두는 대칭 눈금 — 한쪽에 2~3칸이 오도록 간격을 고른다 */
+  const peak = Math.max(...ok.map(Math.abs));
+  const mag = Math.pow(10, Math.floor(Math.log10(peak || 1)));
+  const step = [0.1, 0.2, 0.25, 0.5, 1, 2, 2.5, 5, 10].map(v => v * mag)
+                 .find(v => peak / v <= 2.5) || mag * 10;
+  const arms = Math.max(2, Math.ceil(peak / step));
+  const tk = []; for (let i = -arms; i <= arms; i++) tk.push(+(i * step).toFixed(10));
+  const lo = -arms * step * 1.08, hi = arms * step * 1.08;
+  const y = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+  const bw = Math.min(46, (W - L - R) / MS.length - 12);
+  const x = i => L + (i + 0.5) * (W - L - R) / MS.length;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="월별 첫 주문율 전년 대비 차이">`;
+  tk.forEach(t => { s += `<line class="gridline" x1="${L}" y1="${y(t).toFixed(1)}" x2="${W - R}" y2="${y(t).toFixed(1)}"/>`
+    + `<text class="tick" x="${L - 8}" y="${y(t).toFixed(1)}" text-anchor="end" dominant-baseline="middle">${t > 0 ? '+' : ''}${(+t).toFixed(Math.abs(step) < 1 ? 1 : 0)}</text>`; });
+  s += `<line class="baseline" x1="${L}" y1="${y(0).toFixed(1)}" x2="${W - R}" y2="${y(0).toFixed(1)}"/>`;
+  MS.forEach((m, i) => {
+    const v = ds[i];
+    s += `<text class="tick" x="${x(i).toFixed(1)}" y="${H - B + 17}" text-anchor="middle">${m}월</text>`;
+    if (v == null) return;
+    const col = v >= 0 ? 'var(--good)' : 'var(--crit)';
+    const y0 = y(0), y1 = y(v), top = Math.min(y0, y1), h = Math.max(1.5, Math.abs(y1 - y0));
+    /* 4px 둥근 데이터 끝 — 베이스라인 쪽은 각지게 */
+    const r = Math.min(4, h);
+    const d = v >= 0
+      ? `M${x(i) - bw / 2} ${y0} L${x(i) - bw / 2} ${top + r} Q${x(i) - bw / 2} ${top} ${x(i) - bw / 2 + r} ${top}
+         L${x(i) + bw / 2 - r} ${top} Q${x(i) + bw / 2} ${top} ${x(i) + bw / 2} ${top + r} L${x(i) + bw / 2} ${y0} Z`
+      : `M${x(i) - bw / 2} ${y0} L${x(i) - bw / 2} ${top + h - r} Q${x(i) - bw / 2} ${top + h} ${x(i) - bw / 2 + r} ${top + h}
+         L${x(i) + bw / 2 - r} ${top + h} Q${x(i) + bw / 2} ${top + h} ${x(i) + bw / 2} ${top + h - r} L${x(i) + bw / 2} ${y0} Z`;
+    s += `<path d="${d}" fill="${col}"/>`;
+    /* 값 라벨은 막대 <b>밖</b>에 두되, 축 라벨과 부딪히면 막대 <b>안</b>으로 넣는다 */
+    let ly = v >= 0 ? top - 7 : top + h + 15, inside = false;
+    if (v >= 0 && ly < T + 9)          { ly = top + 15;     inside = true; }
+    if (v <  0 && ly > H - B - 3)      { ly = top + h - 7;  inside = true; }
+    s += `<text class="dlab" x="${x(i).toFixed(1)}" y="${ly.toFixed(1)}"
+      text-anchor="middle" fill="${inside ? 'var(--surface)' : 'var(--ink2)'}">${v > 0 ? '+' : ''}${v.toFixed(1)}</text>`;
+  });
+  s += '</svg>';
+  return s;
+}
+
+/* ★ 누계는 <b>두 해 모두 확정된 달</b>로만 냅니다.
+   한쪽만 관측이 덜 찼는데 그대로 더하면 8개월 vs 7개월을 비교하게 되어
+   차이가 진짜인지 달 수가 다른 탓인지 구분할 수 없습니다. */
+function commonMonths(mk) {
+  const YS = years(), key = METRICS[mk || M].key;
+  return months().filter(m => YS.every(y => { const c = cell(y, m); return c && c[key] != null; }));
+}
+function totals(yr, ms, mk) {
+  const met = METRICS[mk || M];
+  const rs = (ms || commonMonths(mk)).map(m => cell(yr, m)).filter(Boolean);
+  const n = rs.reduce((a, c) => a + (c[met.den] || 0), 0);
+  const k = rs.reduce((a, c) => a + (c[met.num] || 0), 0);
+  return { n, k, rate: n ? k / n * 100 : null, months: rs.length };
+}
+
+function render() {
+  const YS = years(), MS = months();
+  if (YS.length < 1 || !MS.length) {
+    $('tiles').innerHTML = ''; $('alerts').innerHTML = '';
+    $('body').innerHTML = `<div class="card"><p style="color:var(--ink2)">
+      아래에 <code>42_첫주문율_YoY.sql</code> 결과 CSV 를 끌어다 놓으면 시작합니다.</p></div>`;
+    $('foot').innerHTML = '생성 ' + new Date().toISOString().slice(0, 10);
+    renderDefs(); return;
+  }
+  const yp = YS[0], yc = YS[YS.length - 1];
+  if (M === 'second' && !has2()) M = 'first';          // 옛 CSV 호환
+  const MET = METRICS[M], K = MET.key;
+  const CM = commonMonths();
+  const tp = totals(yp, CM), tc = totals(yc, CM);
+  const dRate = (tp.rate != null && tc.rate != null) ? tc.rate - tp.rate : null;
+  const dN = tp.n ? (tc.n - tp.n) / tp.n * 100 : null;
+  const dK = tp.k ? (tc.k - tp.k) / tp.k * 100 : null;
+
+  /* 지표 전환 */
+  $('bar').innerHTML = !has2() ? '' : Object.entries(METRICS).map(([k, v]) =>
+      `<button class="chip ${k === M ? 'on' : ''}" onclick="setM('${k}')">${v.lab}</button>`).join('')
+    + '<span class="sep"></span><span style="color:var(--muted);font-size:12px">'
+    + '두 지표는 <b>관측 종료 시점이 다릅니다</b> — 2회차가 약 5주 늦게 확정됩니다</span>';
+
+  /* 타일 */
+  $('tiles').innerHTML = `
+    <div class="tile hero"><div class="lab">${MET.lab} · 기간 누계</div>
+      <div class="val">${p2(tc.rate)}</div>
+      <div class="dl ${dRate == null ? 'flat' : dRate >= 0 ? 'up' : 'down'}">${
+        dRate == null ? '—' : (dRate >= 0 ? '▲ ' : '▼ ') + pp(dRate)} <span style="color:var(--muted);font-weight:600">vs ${yp}년 ${p2(tp.rate)}</span></div>
+      <div class="note">Σ${MET.numLab} ÷ Σ${MET.denLab} (월별 비율의 단순 평균이 아닙니다).
+        <b>두 해 모두 확정된 ${CM.length}개 달</b>${CM.length && CM.length < MS.length
+          ? ` — ${CM.map(m => m + '월').join('·')} 만으로` : '로'} 계산했습니다.</div></div>
+    <div class="tile"><div class="lab">${MET.denLab} · 누계</div>
+      <div class="val">${nf(tc.n)}</div>
+      <div class="dl ${dN == null ? 'flat' : dN >= 0 ? 'up' : 'down'}">${dN == null ? '—' : (dN >= 0 ? '▲ ' : '▼ ') + pctc(dN)}</div>
+      <div class="note">${yp}년 ${nf(tp.n)}명</div></div>
+    <div class="tile"><div class="lab">${MET.numLab} · 누계</div>
+      <div class="val">${nf(tc.k)}</div>
+      <div class="dl ${dK == null ? 'flat' : dK >= 0 ? 'up' : 'down'}">${dK == null ? '—' : (dK >= 0 ? '▲ ' : '▼ ') + pctc(dK)}</div>
+      <div class="note">${yp}년 ${nf(tp.k)}명</div></div>`;
+
+  /* 경고 */
+  let al = '';
+  const pend = DATA.filter(r => r[K] == null);
+  if (pend.length) al += `<div class="box warnb"><h4><span class="pill">관측</span>${MET.lab}이 아직 확정되지 않은 달이 있습니다</h4>
+    <p>${pend.map(r => esc(r.label)).join(' · ')} 는 관측 창이 안 차서 쿼리가 비워둔 것입니다.
+    ${M === 'second'
+      ? '2회차는 <b>첫 주문일부터 30일</b>을 기다리므로, 첫 주문율보다 <b>약 5주 늦게</b> 확정됩니다.'
+      : '가입 후 <b>7일</b>을 기다립니다.'}
+    덜 찬 값을 하락으로 읽지 않기 위해서입니다.</p></div>`;
+  if (CM.length && CM.length < MS.length) {
+    const drop = MS.filter(m => !CM.includes(m));
+    al += `<div class="box"><h4><span class="pill">누계</span>누계 비교에서 ${drop.map(m => m + '월').join('·')} 은 뺐습니다</h4>
+      <p>한쪽 해만 확정된 달을 그대로 더하면 <b>${MS.length}개월 대 ${CM.length}개월</b>을 비교하게 되어,
+      차이가 실제 변화인지 달 수가 달라서인지 구분할 수 없습니다. 표에는 그대로 남겨 두었습니다.</p></div>`;
+  }
+  /* 두 지표를 같이 읽어 원인을 갈라준다 */
+  if (has2()) {
+    const c1 = commonMonths('first'), c2 = commonMonths('second');
+    const f0 = totals(yp, c2, 'first'), f1 = totals(yc, c2, 'first');
+    const s0 = totals(yp, c2, 'second'), s1 = totals(yc, c2, 'second');
+    const df = (f0.rate != null && f1.rate != null) ? f1.rate - f0.rate : null;
+    const dsx = (s0.rate != null && s1.rate != null) ? s1.rate - s0.rate : null;
+    if (df != null && dsx != null) {
+      const big = 1.0;
+      let head, body;
+      if (df <= -big && Math.abs(dsx) < big) { head = '획득 쪽 문제로 보입니다';
+        body 	= '첫 주문율만 떨어지고 2회차는 유지됩니다 — 들어온 사람의 <b>경험</b>은 그대로인데 <b>유입의 질이나 온보딩</b>이 바뀐 모습입니다.'; }
+      else if (Math.abs(df) < big && dsx <= -big) { head = '경험 쪽 문제로 보입니다';
+        body = '첫 주문율은 유지되는데 2회차만 떨어집니다 — <b>첫 세탁 경험</b>(만족도·가격·리드타임)을 먼저 보세요.'; }
+      else if (df <= -big && dsx <= -big) { head = '둘 다 떨어졌습니다';
+        body = '획득과 경험이 같이 밀렸습니다. 유입 구성이 크게 바뀌지 않았는지 먼저 확인하세요.'; }
+      else if (df >= big && dsx <= -big) { head = '첫 주문은 늘었지만 2회차가 떨어졌습니다';
+        body = '한계 고객이 더 들어온 모습입니다. <b>순증은 생각보다 작습니다</b> — 2회차 주문자 수(건수)로 확인하세요.'; }
+      else { head = '두 지표가 같은 방향입니다'; body = '획득과 경험이 함께 움직였습니다.'; }
+      al += `<div class="box ${(df < 0 || dsx < 0) ? 'bad' : ''}"><h4><span class="pill">해석</span>${head}</h4>
+        <p>같은 ${c2.length}개 달 기준으로 첫 주문율 <b>${pp(df)}</b> · 2회차 주문율 <b>${pp(dsx)}</b>. ${body}</p></div>`;
+    }
+  }
+  $('alerts').innerHTML = al;
+
+  /* 본문 */
+  const lgd = `<div class="legend">
+    <span class="lg"><i class="sw" style="background:var(--s2)"></i>${yp}년</span>
+    <span class="lg"><i class="sw" style="background:var(--s1)"></i>${yc}년</span></div>`;
+  let html = `<div class="card"><h3>${MET.full} — 월별</h3>
+    <p class="cap">${MET.cap}. 세로축은 0 부터가 아니라 데이터 범위에 맞춰져 있습니다 — 눈금을 확인하세요.</p>
+    ${lgd}${lineChart(K, v => v.toFixed(1) + '%', MET.lab)}</div>`;
+
+  html += `<div class="card"><h3>전년 대비 차이 (%p) — 월별</h3>
+    <p class="cap">${yc}년 − ${yp}년. <b>비율의 % 변화가 아니라 %p 차이</b>입니다.
+    ${M === 'second'
+      ? '2회차는 분모가 첫 주문자라 표본이 작습니다 — 오차범위가 첫 주문율의 <b>두 배 가까이</b> 넓습니다(월 ±1.7%p 수준).'
+      : '월 가입자가 1만 명이면 95% 오차범위가 ±0.9%p 이니 <b>1%p 미만은 노이즈</b>로 보세요.'}</p>
+    ${deltaChart()}</div>`;
+
+  html += `<div class="charts">
+    <div class="card"><h3>${MET.denLab} (명)</h3><p class="cap">비율의 분모</p>${lgd}${lineChart(MET.den, v => nf(v), MET.denLab)}</div>
+    <div class="card"><h3>${MET.numLab} 수 (명)</h3><p class="cap">비율의 분자</p>${lgd}${lineChart(MET.num, v => nf(v), MET.numLab)}</div>
+  </div>`;
+
+  /* 표 — 색에만 의존하지 않도록 항상 둡니다. 두 지표를 나란히 둡니다. */
+  const two = has2();
+  html += `<div class="card"><h3>표</h3><p class="cap">차트와 같은 값입니다. 색 없이도 읽히도록 항상 함께 둡니다.
+    ${two ? '2회차는 <b>첫 주문자</b>가 분모입니다 — 첫 주문율과 분모가 다릅니다.' : ''}</p>
+    <div class="tw"><table><thead><tr>
+      <th>월</th><th>${yp} 가입자</th><th>${yc} 가입자</th>
+      <th>${yp} 첫 주문율</th><th>${yc} 첫 주문율</th><th>차이</th>`
+    + (two ? `<th>${yp} 2회차</th><th>${yc} 2회차</th><th>차이</th>` : '')
+    + `<th style="text-align:left">비고</th></tr></thead><tbody>`;
+  MS.forEach(m => {
+    const a = cell(yp, m), b = cell(yc, m);
+    const d1 = (a && b && a.rate != null && b.rate != null) ? b.rate - a.rate : null;
+    const d2 = (a && b && a.rate2 != null && b.rate2 != null) ? b.rate2 - a.rate2 : null;
+    const bdg = d => d == null ? '—'
+      : `<span class="badge ${d >= 0 ? 'g' : 'b'}"><i>${d >= 0 ? '▲' : '▼'}</i>${pp(d)}</span>`;
+    const note = [a && a.note, b && b.note].filter(x => x && x !== '전월');
+    html += `<tr><td class="mo">${m}월</td>
+      <td>${nf(a && a.n)}</td><td>${nf(b && b.n)}</td>
+      <td>${p2(a && a.rate)}</td><td>${p2(b && b.rate)}</td><td>${bdg(d1)}</td>`
+      + (two ? `<td>${p2(a && a.rate2)}</td><td>${p2(b && b.rate2)}</td><td>${bdg(d2)}</td>` : '')
+      + `<td class="memo" style="text-align:left;color:var(--muted);font-size:12px">${esc([...new Set(note)].join(' · ') || '—')}</td></tr>`;
+  });
+  const C1 = commonMonths('first'), C2 = commonMonths('second');
+  const f0 = totals(yp, C1, 'first'), f1 = totals(yc, C1, 'first');
+  const s0 = two ? totals(yp, C2, 'second') : null, s1 = two ? totals(yc, C2, 'second') : null;
+  const bd = d => d == null ? '—'
+    : `<span class="badge ${d >= 0 ? 'g' : 'b'}"><i>${d >= 0 ? '▲' : '▼'}</i>${pp(d)}</span>`;
+  html += `<tr style="border-top:2px solid var(--axis)"><td class="mo">누계</td>
+      <td>${nf(f0.n)}</td><td>${nf(f1.n)}</td>
+      <td>${p2(f0.rate)}</td><td>${p2(f1.rate)}</td>
+      <td>${bd(f0.rate != null && f1.rate != null ? f1.rate - f0.rate : null)}</td>`
+    + (two ? `<td>${p2(s0.rate)}</td><td>${p2(s1.rate)}</td>
+        <td>${bd(s0.rate != null && s1.rate != null ? s1.rate - s0.rate : null)}</td>` : '')
+    + `<td class="memo" style="text-align:left;color:var(--muted);font-size:12px">가중 합계 · 첫 주문율 ${C1.length}개 달${
+        two ? ` / 2회차 ${C2.length}개 달` : ''}</td></tr>`;
+  html += '</tbody></table></div></div>';
+  $('body').innerHTML = html;
+
+  const parts = [...new Set(DATA.map(r => r.note).filter(x => x && x.startsWith('부분')))];
+  $('foot').innerHTML = `비교 구간 ${yp} / ${yc} · ${MS[0]}월 ~ ${MS[MS.length - 1]}월`
+    + (parts.length ? ` (${esc(parts[0])})` : '')
+    + `<br>수거신청 필터 <code>status not in (4,17)</code> · <code>laundry24_pgi is null</code> ·
+       가입 모수는 전수(LAUNDRY24 계정만 제외, 탈퇴 회원 포함)<br>생성 ${new Date().toISOString().slice(0, 10)}`;
+  renderDefs();
+  bindTips();
+}
+
+function renderDefs() {
+  const t = $('defbody'); if (!t || t.dataset.done) return;
+  const rows = [
+    ['분모 — 신규 가입자', '그 달에 가입한 회원 <b>전수</b>. <b>LAUNDRY24(무인세탁소) 계정만</b> 제외하고 <b>이후 탈퇴한 회원도 그대로</b> 셉니다. <code>deleted=false</code> 로 걸면 분모가 "지금 시점의 생존자" 가 되어, 시간이 지나 탈퇴가 쌓이면 <b>과거 달의 값이 조용히 바뀝니다</b> (실측 최대 1.45%p). 현업 전환율 쿼리와 같은 기준입니다.'],
+    ['분자 — 첫 주문자 수', '가입일부터 <b>7일 안에</b> 첫 수거신청을 한 <b>사람 수</b>. 요금제(자유/구독) <b>구분 없이</b> 한 사람을 한 번만 셉니다. 같은 사람이 7일 안에 두 번 주문해도 1명입니다 — <b>주문 건수가 아닙니다.</b>'],
+    ['7일 창', '가입일 당일부터 +7일까지(경계 포함). 7일이면 최종 전환의 8할 이상을 잡습니다(실측 7일 34% · 30일 39% · 60일 41%). 주간 리뷰에 맞춘 창이라 40번 ②와 같습니다.'],
+    ['왜 8/20 에서 자르나', '8월을 통째로 넣으면 이번 해는 아직 안 끝난 달이라 <b>무조건 작게</b> 나옵니다. 그래서 두 해 모두 <b>8/1~8/20</b> 로 자릅니다. 1~7월은 온전한 달입니다.'],
+    ['%p 와 % 는 다릅니다', '"34% → 30%" 는 <b>-4%p</b> 이고 -11.8% 입니다. 이 지표는 <b>%p 로 읽어야</b> 크기 감각이 맞습니다. 표와 차트 모두 %p 를 씁니다.'],
+    ['누계는 가중 합계', '기간 누계 = <b>Σ첫 주문자 ÷ Σ가입자</b> 입니다. 월별 비율의 <b>단순 평균이 아닙니다</b> — 달마다 가입자 수가 달라 가중이 다르기 때문입니다.'],
+    ['비율이 떨어졌다고 다 나쁜 건 아닙니다', '대량 유입 달에는 첫 주문율이 <b>구조적으로</b> 떨어집니다. 자유 재주문에서도 코호트 크기와 180일 재주문율의 상관이 <b>-0.83</b> 이었습니다. 그래서 이 화면은 비율 옆에 <b>분자·분모를 나란히</b> 둡니다 — 셋을 같이 보지 않으면 원인을 못 찾습니다.'],
+    ['2회차 주문율', '<b>첫 주문일부터 30일</b> 안에 두 번째 수거신청까지 간 비율. 분모는 가입자가 아니라 <b>첫 주문자</b>입니다. ★ 기준일이 <b>가입일이 아니라 첫 주문일</b>인 것이 핵심입니다 — 가입일에서 재면 첫 주문이 늦은 사람일수록 2회차 낼 시간이 줄어, 재주문 능력이 아니라 <b>첫 주문 속도</b>를 재게 됩니다. 같은 날 두 건이면 2회차로 셉니다.'],
+    ['★ 두 지표는 확정 시점이 다릅니다', '2회차는 첫 주문일에서 30일을 더 기다리므로 첫 주문율보다 <b>약 5주 늦게</b> 확정됩니다. 최근 두 달쯤 2회차가 비어 있는 것은 <b>정상</b>입니다. 그래서 누계도 <b>지표별로 다른 개수의 달</b>로 계산합니다 — 표 맨 아랫줄 비고에 몇 개 달인지 적혀 있습니다.'],
+    ['두 지표를 같이 읽는 법', '· 첫 주문율↓ · 2회차→ : <b>획득</b> 문제(유입의 질·온보딩)<br>· 첫 주문율→ · 2회차↓ : <b>경험</b> 문제(첫 세탁 만족도·가격·리드타임)<br>· 둘 다↓ : 구조적 문제, 유입 구성 변화를 먼저 확인<br>· 첫 주문율↑ · 2회차↓ : 한계 고객이 더 들어온 것 — 순증은 생각보다 작습니다'],
+    ['표본 감각', '월 가입자 1만 명, 첫 주문율 33% 기준 95% 오차범위는 <b>±0.9%p</b> 입니다. <b>1%p 미만 차이는 노이즈</b>, 2%p 이상부터 신호로 보세요. 2회차는 분모가 첫 주문자(≈3,300명)라 오차범위가 <b>±1.7%p</b> 로 두 배 가까이 넓습니다 — 같은 크기의 차이라도 <b>2회차 쪽이 덜 확실</b>합니다.']
+  ];
+  t.innerHTML = '<div class="tw"><table><thead><tr><th style="width:26%">항목</th><th style="text-align:left">무엇을 뜻하는가</th></tr></thead><tbody>'
+    + rows.map(([a, b]) => `<tr><td style="font-weight:600;color:var(--ink);vertical-align:top;white-space:normal">${a}</td>
+        <td style="text-align:left;color:var(--ink2);white-space:normal;line-height:1.6">${b}</td></tr>`).join('')
+    + '</tbody></table></div>';
+  t.dataset.done = '1';
+}
+
+/* ── 호버 ───────────────────────────────────────────────────────── */
+function bindTips() {
+  const tip = $('tip'), YS = years();
+  document.querySelectorAll('.hit').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      const k = el.dataset.k, m = +el.dataset.m;
+      const lines = [m + '월'];
+      YS.forEach(y => {
+        const c = cell(y, m); if (!c) return;
+        const v = c[k];
+        lines.push(y + '  ' + (v == null ? '관측 대기'
+          : (k === 'rate' || k === 'rate2') ? v.toFixed(2) + '%' : nf(v) + '명'));
+      });
+      if ((k === 'rate' || k === 'rate2') && YS.length === 2) {
+        const a = cell(YS[0], m), b = cell(YS[1], m);
+        if (a && b && a[k] != null && b[k] != null) lines.push('차이  ' + pp(b[k] - a[k]));
+      }
+      tip.textContent = lines.join('\n'); tip.style.opacity = 1;
+    });
+    el.addEventListener('mousemove', e => {
+      tip.style.left = (e.clientX + 14) + 'px'; tip.style.top = (e.clientY - 42) + 'px';
+    });
+    el.addEventListener('mouseleave', () => { tip.style.opacity = 0; });
+  });
+}
+
+/* ── CSV 읽기 ───────────────────────────────────────────────────── */
+function parseCsv(t) {
+  const rows = []; let cellv = '', row = [], q = false;
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (q) { if (c === '"') { if (t[i + 1] === '"') { cellv += '"'; i++; } else q = false; } else cellv += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(cellv); cellv = ''; }
+    else if (c === '\n') { row.push(cellv); rows.push(row); row = []; cellv = ''; }
+    else if (c !== '\r') cellv += c;
+  }
+  if (cellv !== '' || row.length) { row.push(cellv); rows.push(row); }
+  return rows.filter(r => r.length > 1 && r.some(x => x.trim() !== ''));
+}
+function toRecords(text) {
+  const rows = parseCsv(text.replace(/^﻿/, '').trim());
+  if (!rows.length) throw new Error('빈 파일');
+  const num = s => { const x = parseFloat(String(s).replace(/,/g, '')); return isNaN(x) ? null : x; };
+  /* 컬럼 <b>이름</b>으로 찾습니다 — 2회차 컬럼이 붙은 새 CSV 와
+     붙기 전의 옛 CSV 를 둘 다 받기 위해서입니다. */
+  const hasHdr = (rows[0] || []).some(c => (c || '').includes('연도'));
+  const hdr = hasHdr ? rows[0].map(c => (c || '').trim()) : [];
+  const col = (...names) => {
+    for (const nm of names) { const i = hdr.findIndex(h => h === nm); if (i >= 0) return i; }
+    return -1;
+  };
+  const IX = hasHdr
+    ? { yr: col('연도'), mo: col('월'), label: col('기간'), n: col('신규 가입자(명)'),
+        k: col('첫 주문자 수(명)'), rate: col('첫 주문율(%)'),
+        k2: col('2회차 주문자 수(명)'), rate2: col('2회차 주문율(%)'),
+        rate2j: col('가입자 대비 2회차(%)'), note: col('비고') }
+    : { yr: 0, mo: 1, label: 2, n: 3, k: 4, rate: 5, k2: -1, rate2: -1, rate2j: -1, note: 6 };
+  const at = (r, i) => (i >= 0 ? r[i] : undefined);
+  const out = rows.slice(hasHdr ? 1 : 0).map(r => ({
+    yr: num(at(r, IX.yr)), mo: num(at(r, IX.mo)), label: (at(r, IX.label) || '').trim(),
+    n: num(at(r, IX.n)), k: num(at(r, IX.k)), rate: num(at(r, IX.rate)),
+    k2: num(at(r, IX.k2)), rate2: num(at(r, IX.rate2)), rate2j: num(at(r, IX.rate2j)),
+    note: (at(r, IX.note) || '').trim()
+  })).filter(r => r.yr && r.mo);
+  if (!out.length) throw new Error('읽을 행이 없습니다 — 컬럼 이름을 확인해 주세요');
+  if (!out.some(r => r.n != null)) throw new Error('숫자 컬럼을 찾지 못했습니다');
+  const ys = [...new Set(out.map(r => r.yr))];
+  if (ys.length > 2) throw new Error('연도가 ' + ys.length + '개입니다 — 이 화면은 두 해 비교 전용입니다');
+  return out;
+}
+function decode(buf) {
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+  catch (e) {
+    for (const enc of ['euc-kr', 'windows-949']) { try { return new TextDecoder(enc).decode(buf); } catch (_) {} }
+    return new TextDecoder('utf-8').decode(buf);
+  }
+}
+function say(t, cls) { const m = $('msg'); m.textContent = t; m.className = cls || ''; }
+function apply(recs, label) {
+  DATA = recs;
+  const ys = [...new Set(DATA.map(r => r.yr))].sort();
+  say(`${label} · ${DATA.length}행 · ${ys.join(' vs ')}`, 'ok');
+  try { localStorage.setItem('fo_yoy', JSON.stringify({ recs: DATA, label, at: Date.now() })); } catch (e) {}
+  render();
+}
+function loadText(text) { try { apply(toRecords(text), '붙여넣기'); } catch (e) { say('읽기 실패 — ' + e.message, 'err'); } }
+function loadFile(f) {
+  if (!f) return;
+  if (!/\.(csv|txt)$/i.test(f.name)) { say('CSV 파일만 됩니다 (' + f.name + ')', 'err'); return; }
+  const rd = new FileReader();
+  rd.onload = () => { try { apply(toRecords(decode(rd.result)), f.name); } catch (e) { say('읽기 실패 — ' + e.message, 'err'); } };
+  rd.onerror = () => say('파일을 열지 못했습니다', 'err');
+  rd.readAsArrayBuffer(f);
+}
+function setM(m) { M = m; render(); }
+function resetData() {
+  DATA = RAW.slice();
+  try { localStorage.removeItem('fo_yoy'); } catch (e) {}
+  say('비웠습니다', ''); render();
+}
+$('file').addEventListener('change', e => { loadFile(e.target.files[0]); e.target.value = ''; });
+const dz = $('drop');
+['dragenter', 'dragover'].forEach(ev => document.addEventListener(ev, e => {
+  if (!e.dataTransfer || ![...e.dataTransfer.types].includes('Files')) return;
+  e.preventDefault(); dz.classList.add('over');
+}));
+['dragleave', 'drop'].forEach(ev => document.addEventListener(ev, e => {
+  if (ev === 'drop') e.preventDefault();
+  if (ev === 'dragleave' && e.relatedTarget) return;
+  dz.classList.remove('over');
+}));
+document.addEventListener('drop', e => { if (e.dataTransfer && e.dataTransfer.files.length) loadFile(e.dataTransfer.files[0]); });
+
+/* 구워 넣은 데이터가 있으면 그것이 기본값입니다 */
+if (BAKED) { try { DATA = toRecords(BAKED); } catch (e) {} }
+/* 새 빌드면 지난번 업로드 캐시를 버립니다 */
+try {
+  const bid = localStorage.getItem('__build__fo_yoy');
+  if (BAKED && bid !== BUILD_ID) { localStorage.removeItem('fo_yoy'); localStorage.setItem('__build__fo_yoy', BUILD_ID); }
+} catch (e) {}
+(function () {
+  try {
+    const s = localStorage.getItem('fo_yoy');
+    if (!s) return;
+    const o = JSON.parse(s);
+    if (o && Array.isArray(o.recs) && o.recs.length) {
+      DATA = o.recs;
+      say(`지난번 업로드 복원 (${o.label || 'CSV'} · ${new Date(o.at || Date.now()).toISOString().slice(0, 10)})`, 'ok');
+    }
+  } catch (e) {}
+})();
+
+render();
+</script>
+</body>
+</html>

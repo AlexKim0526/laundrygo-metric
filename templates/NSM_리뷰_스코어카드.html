@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>런드리고 NSM 리뷰 스코어카드</title>
+<style>
+:root{color-scheme:light;
+ --page:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;
+ --grid:#e1e0d9;--axis:#c3c2b7;--ring:rgba(11,11,11,.10);
+ --s1:#2a78d6;                     /* 검증 통과 categorical slot 1 */
+ --good:#0ca30c;--warn:#fab219;--crit:#d03b3b;--goodtxt:#006300;
+ --gooddim:rgba(12,163,12,.10);--critdim:rgba(208,59,59,.10);--warndim:rgba(250,178,25,.13);}
+@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){color-scheme:dark;
+ --page:#0d0d0d;--surface:#1a1a19;--ink:#fff;--ink2:#c3c2b7;--muted:#898781;
+ --grid:#2c2c2a;--axis:#383835;--ring:rgba(255,255,255,.10);
+ --s1:#3987e5;--goodtxt:#0ca30c;
+ --gooddim:rgba(12,163,12,.16);--critdim:rgba(208,59,59,.18);--warndim:rgba(250,178,25,.16);}}
+:root[data-theme="dark"]{color-scheme:dark;
+ --page:#0d0d0d;--surface:#1a1a19;--ink:#fff;--ink2:#c3c2b7;--muted:#898781;
+ --grid:#2c2c2a;--axis:#383835;--ring:rgba(255,255,255,.10);
+ --s1:#3987e5;--goodtxt:#0ca30c;
+ --gooddim:rgba(12,163,12,.16);--critdim:rgba(208,59,59,.18);--warndim:rgba(250,178,25,.16);}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;background:var(--page);
+ color:var(--ink);line-height:1.6;font-size:14px;word-break:keep-all;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1120px;margin:0 auto;padding:30px 22px 72px}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}
+h1{font-size:25px;font-weight:700;letter-spacing:-.4px;margin-top:6px;line-height:1.3}
+.lede{color:var(--ink2);font-size:13.5px;margin-top:8px;max-width:74ch}
+.card{background:var(--surface);border:1px solid var(--ring);border-radius:14px;padding:18px 20px;margin-bottom:14px}
+.card h3{font-size:14.5px;font-weight:700;margin-bottom:2px}
+.card .cap{color:var(--muted);font-size:12px;margin-bottom:14px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0 6px}
+.tile{background:var(--surface);border:1px solid var(--ring);border-radius:14px;padding:15px 16px}
+.tile .lab{color:var(--ink2);font-size:12px;font-weight:600}
+.tile .val{font-size:26px;font-weight:700;margin-top:6px;letter-spacing:-.5px;line-height:1.1;
+ font-variant-numeric:tabular-nums}
+.tile .dl{font-size:12.5px;font-weight:700;margin-top:5px}
+.tile .note{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.45}
+.up{color:var(--goodtxt)}.down{color:var(--crit)}.flat{color:var(--muted)}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:20px 0 14px}
+.chip{font-size:12.5px;font-weight:600;padding:6px 13px;border-radius:20px;border:1px solid var(--ring);
+ background:var(--surface);color:var(--ink2);cursor:pointer;font-variant-numeric:tabular-nums}
+.chip:hover{border-color:var(--axis);color:var(--ink)}
+.chip.on{background:var(--ink);color:var(--page);border-color:var(--ink)}
+.chip.tog.on{background:var(--crit);border-color:var(--crit);color:#fff}
+.sep{flex:1}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:9px 10px;text-align:right;border-bottom:1px solid var(--grid);
+ font-variant-numeric:tabular-nums;vertical-align:middle}
+th:first-child,td:first-child{text-align:left;font-variant-numeric:normal}
+th{color:var(--ink2);font-weight:600;font-size:11.5px;white-space:nowrap}
+td.mname{font-weight:600;color:var(--ink)}
+td.base{color:var(--muted);font-size:12px;text-align:left;white-space:nowrap}
+tbody tr:hover{background:var(--page)}
+.grpname{font-size:13px;font-weight:700;color:var(--ink);padding:14px 10px 6px;letter-spacing:-.2px}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;
+ padding:3px 10px;border-radius:20px;white-space:nowrap}
+.badge.g{background:var(--gooddim);color:var(--goodtxt)}
+.badge.b{background:var(--critdim);color:var(--crit)}
+.badge i{font-style:normal;font-size:11px}
+.pend{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;
+  padding:2px 8px;border-radius:999px;background:var(--surface2,#f1f1ef);
+  color:var(--muted);border:1px solid var(--line);cursor:help;white-space:nowrap}
+.pend i{font-style:normal;font-size:10px}
+.spark{display:block}
+.box{background:var(--surface);border:1px solid var(--ring);border-left:3px solid var(--s1);border-radius:12px;
+ padding:15px 17px;margin-bottom:12px}
+.box.bad{border-left-color:var(--crit)}.box.warnb{border-left-color:var(--warn)}
+.box h4{font-size:14px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.box p{color:var(--ink2);font-size:13.3px}.box p+p{margin-top:8px}
+.box b{color:var(--ink)}
+.pill{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;border:1px solid var(--ring);
+ color:var(--ink2);background:var(--page);white-space:nowrap}
+textarea{width:100%;height:130px;margin:10px 0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+ font-size:11.5px;padding:10px;border:1px solid var(--ring);border-radius:8px;
+ background:var(--page);color:var(--ink);resize:vertical}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;background:var(--page);
+ border:1px solid var(--ring);border-radius:5px;padding:1px 5px}
+.drop{border:1.5px dashed var(--axis);border-radius:14px;background:var(--surface);
+ padding:20px 22px;margin-top:20px;transition:border-color .12s,background .12s}
+.drop.over{border-color:var(--s1);background:var(--page);border-style:solid}
+.defsum{font-size:14px;font-weight:700;cursor:pointer;color:var(--ink);list-style:none}
+.defsum::-webkit-details-marker{display:none}
+.defsum::before{content:'▸ ';color:var(--muted)}
+details[open] .defsum::before{content:'▾ '}
+#tdef td{vertical-align:top}
+#tdef td:nth-child(2){text-align:left;color:var(--ink2);white-space:normal;line-height:1.55}
+#tdef td.g{font-weight:700;color:var(--ink);padding-top:14px;background:transparent}
+.diag{margin:10px 10px 2px;padding:9px 12px;background:var(--page);border:1px solid var(--ring);
+ border-radius:9px;font-size:12.5px;color:var(--ink2);line-height:1.7}
+.diag b{color:var(--ink)}
+.dnote{color:var(--muted);font-size:12px}
+.defnote{color:var(--muted);font-size:12px;margin-top:12px;line-height:1.65}
+.dz-title{font-size:14.5px;font-weight:700;margin-bottom:4px}
+.dz-sub{color:var(--ink2);font-size:13px}
+.dz-row{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:13px}
+.dz-note{color:var(--muted);font-size:12px;margin-top:11px;line-height:1.6}
+#msg{font-size:12.5px;font-weight:600}
+#msg.ok{color:var(--goodtxt)} #msg.err{color:var(--crit)}
+.btn{display:inline-block;font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;
+ border:1px solid var(--ink);background:var(--ink);color:var(--page);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink2);border-color:var(--ring)}
+.btn.ghost:hover{border-color:var(--axis);color:var(--ink)}
+details.alt{margin-top:14px;border-top:1px solid var(--grid);padding-top:12px}
+details.alt summary{font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer}
+details.alt summary:hover{color:var(--ink2)}
+footer{margin-top:36px;padding-top:18px;border-top:1px solid var(--grid);color:var(--muted);font-size:12px}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--surface);font-size:11.5px;
+ padding:6px 9px;border-radius:7px;opacity:0;transition:opacity .1s;z-index:50;white-space:nowrap;
+ font-variant-numeric:tabular-nums}
+.tw{overflow-x:auto}
+@media(max-width:820px){.tiles{grid-template-columns:repeat(2,1fr)}.wrap{padding:22px 14px 56px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="eyebrow">런드리고 · 북극성 지표</div>
+<h1>NSM 리뷰 스코어카드</h1>
+<p class="lede">쿼리 결과 CSV를 <b>끌어다 놓으면</b> 갱신됩니다. 판정이 <b>이탈</b>인 것부터 보시면 됩니다.</p>
+
+<div class="tiles" id="tiles"></div>
+<div class="bar" id="bar"></div>
+<div id="alerts"></div>
+<div id="body"></div>
+
+<div class="card" style="margin-top:18px">
+<details id="defs">
+<summary class="defsum">지표 정의 — 이 숫자가 정확히 무엇인가</summary>
+<div class="tw" style="margin-top:14px"><table id="tdef"></table></div>
+<div class="defnote">
+공통 필터 — 수거신청은 <code>status not in (4,17)</code> · <code>laundry24_pgi is null</code>.
+전년 동기는 월이면 12개월 전, 주면 364일 전(요일 정렬 유지)입니다.
+</div>
+</details>
+</div>
+
+<div id="drop" class="drop">
+  <div class="dropin">
+    <div class="dz-title">새 결과로 갱신하기</div>
+    <p class="dz-sub"><code>20_NSM_리뷰_스코어카드.sql</code> 결과를 CSV로 저장한 뒤
+      <b>여기에 파일을 끌어다 놓거나</b> 아래 버튼으로 선택하세요. <b>여러 개를 한 번에</b> 올리면 합쳐집니다(20번 + 23번).</p>
+    <div class="dz-row">
+      <label class="btn" for="file">CSV 파일 선택</label>
+      <input type="file" id="file" accept=".csv,text/csv" multiple hidden>
+      <button class="btn ghost" onclick="resetData()">기본 데이터로</button>
+      <span id="msg"></span>
+    </div>
+    <div class="dz-note">UTF-8 · CP949(엑셀 한글) 자동 인식 · 컬럼 순서는
+      <code>기간 · 구분 · 지표 · 값 · 전년 동기 · YoY(%) · 기준선 · 판정</code> 그대로여야 합니다.</div>
+    <details class="alt"><summary>파일 대신 붙여넣기</summary>
+      <textarea id="csv" placeholder="기간,구분,지표,값,전년 동기,YoY(%),기준선,판정&#10;2026-08-01,① 핵심,NSM · 세탁 물량(점),..."></textarea>
+      <button class="btn" onclick="loadText(document.getElementById('csv').value)">붙여넣기 갱신</button>
+    </details>
+  </div>
+</div>
+
+<footer id="foot"></footer>
+</div>
+<div class="tip" id="tip"></div>
+<script>
+const RAW = [];
+</script>
+<script>
+const HIDE = ['배송시각 결측(%)', '배송시각 결측(%) · 미완결 신호'];   // 구버전 호환
+const isDiag = r => r.g.startsWith('⑨') || HIDE.includes(r.m);   // 진단 — 표에서 숨기고 해석에만 사용
+
+const DEF = [
+ ['① 핵심', [
+  ['NSM · 세탁 물량(점)', '세탁해서 돌려드린 옷의 수. <b>wash_item 중 accepted=1</b> 을 세되 <b>세탁 부속품과 세탁 불가는 뺍니다</b> — 부속품은 손상 방지를 위해 분리한 것이라 고객이 맡긴 옷이 늘어난 게 아니고, 세탁 불가는 가치를 전달하지 못한 건이기 때문입니다. 원장의 바코드 수보다 1~5% 작습니다.'],
+  ['활성 고객 수(순, 명)', '해당 기간에 수거신청이 1건 이상인 고객. <b>중복 제거된 순 인원</b>이라, 구독과 자유를 같은 달에 모두 쓴 사람도 1명입니다.'],
+  ['고객당 물량(점)', 'NSM ÷ 활성 고객 수. NSM 이 흔들릴 때 <b>고객이 줄어서인지 덜 써서인지</b>를 가릅니다.'],
+  ['수거신청 수(건)', 'wash 건수. 구독은 한 달에 여러 번 신청할 수 있어 고객 수와 다릅니다.']]],
+ ['② 구성', [
+  ['구독 고객 비중(%)', '활성 고객 중 구독(월 구독 + 플러스)으로 이용한 사람의 비율. <b>NSM 하락의 원인은 지금까지 거의 항상 여기</b>였습니다.'],
+  ['구독 고객당 물량(점)', '구독 고객의 1인당 물량. 자유의 약 1.9배입니다.'],
+  ['자유 고객당 물량(점)', '자유 고객의 1인당 물량.'],
+  ['월 구독 / 플러스 / 자유 물량(점)', '세그먼트별 NSM. 셋을 더하면 전체가 됩니다(미분류 제외). 플러스는 3·6·12개월 약정을 합친 값입니다.']]],
+ ['③ 구독', [
+  ['구독-개월 수(건)', '그 기간에 구독료가 발생한 건수. 구독 기반의 크기입니다.'],
+  ['낙전 비율(%)', '구독료는 냈는데 <b>그 달에 수거신청이 0건</b>인 비율. 수익성에는 좋지만 <b>해지 직전의 전형적 패턴</b>이라 이탈 선행지표로 봅니다.']]],
+ ['④ 금액', [
+  ['결제금액(원)', '<b>(실결제 + 충전포인트 + 매출성포인트) − 취소분.</b> 현업 상시 쿼리와 같은 정의이고, 마케팅이 보고하는 결제액과 1% 이내로 맞습니다. 무상·프로모션 포인트는 매출로 잡지 않습니다.'],
+  ['실질 매출(선수금 이연, 원)', '플러스는 약정 개월치를 <b>가입월에 한꺼번에</b> 결제받습니다. 그 선수금을 약정 기간에 나눠 배분한 값이라, 결제금액보다 <b>이쪽이 실제 사업 상태</b>에 가깝습니다.'],
+  ['무상포인트 할인율(%)', '무상·프로모션 포인트 ÷ (결제금액 + 무상포인트). <b>물량을 프로모션으로 사고 있는지</b>를 봅니다.']]],
+ ['⑤ 품질', [
+  ['출고 기한 준수율(%)', '<b>세탁 완료일 ≤ 출고 기한(RELEASE_DEADLINE_DATE).</b> 배송 완료일이 아닙니다 — 배송으로 재면 D+1 기한을 구조적으로 못 맞춰 50%대로 잘못 나옵니다.'],
+  ['전체 리드타임 P90(일)', '수거 신청부터 배송 완료까지, 느린 쪽 10% 가 걸린 시간. <b>평균보다 P90 을 보세요</b> — 평균이 멀쩡해도 P90 이 튀면 일부 고객만 크게 지연되는 상태이고 그 고객이 먼저 이탈합니다.'],
+  ['세탁 불가(만건당)', '고객이 맡겼는데 <b>세탁하지 못한</b> 건. 전체 바코드 만 건당 몇 건인지. 분모는 부속품·세탁불가를 포함한 전체입니다.'],
+  ['세탁 부속품 비중(%)', '손상 방지를 위해 분리한 부속품의 비중. NSM 에서는 빠지지만 <b>검수 프로세스 변화의 신호</b>라 따로 봅니다.'],
+  ['QC 부적합률(%)', 'QC 부적합(<code>PRFT082</code>) ÷ <b>QC 진행 건</b>. 분모가 전체가 아니라 진행 건이라는 게 핵심입니다 — QC 안 한 건을 적합으로 섞으면 부적합률이 실제보다 낮게 나옵니다. 시간축은 <b>출고월(세탁 완료월)</b>입니다 — 그 옷이 나간 달에 붙입니다. <b>QC 진행률이 20% 미만인 (기간·공장)은 자동으로 비웁니다</b> — 일부에만 QC 하던 시기의 부적합률은 "문제 있어 보이는 옷만 골라 본 결과"라 전체 품질로 읽을 수 없기 때문입니다. 진행률의 분모는 <b>QC 를 하는 공장의 출고분</b>만입니다 — 부산공장은 QC·스파팅을 하지 않아 분모에서 빠집니다.'],
+  ['스파팅 못지움율(%)', '못지움(<code>PRFT084</code>) ÷ <b>스파팅 진행 건</b>(적합 083 · 재세탁 089 · 못지움 084 의 합). 셋은 의류당 상호배타입니다. <code>PRFT086</code>은 <b>태그만 하고 결과를 입력하지 않은 건</b>이라 분모·분자 어디에도 넣지 않고, ⑨ 진단에 \'스파팅 결과 미입력률\'로만 냅니다. QC 부적합률과 같은 커버리지 가드가 걸립니다.'],
+  ['안심케어 인입률(%)', '안심케어가 접수된 의류 ÷ 출고 의류. <b>요청일이 아니라 그 의류가 나간 달</b>로 세어 분자와 분모를 같은 모수 위에 놓았습니다. 출고일은 <b>세탁 완료일(washed_at)</b>로 잡습니다 — 출고 기한 준수율과 같은 날짜입니다. 요청이 다 들어오지 않은 최근 기간은 자동으로 비워집니다.']]],
+ ['⑥ 캐파', [
+  ['일평균 / 일 최대 물량(점)', '하루 처리량. <b>일 최대의 역대치가 곧 캐파의 하한</b>입니다. 일평균이 그 80% 를 넘기 시작하면 물량 목표에 상한을 걸어야 합니다.']]],
+ ['⑦ 신규', [
+  ['신규 가입자(명)', '그 기간에 가입한 회원. <b>LAUNDRY24(무인세탁소) 계정만 제외</b>합니다 — 별개 서비스라 수거신청과 연결되지 않습니다. <b>이후 탈퇴한 회원도 그대로 셉니다</b> — 분모를 "지금 생존자"로 걸면 시간이 지나며 과거 달의 값이 조용히 바뀝니다(실측 최대 1.45%p). 현업 전환율 쿼리와도 같은 기준입니다.'],
+  ['가입 → 7일 내 첫 이용(%)', '가입한 사람 중 <b>7일 안에 첫 수거신청</b>까지 간 비율. 획득이 아니라 <b>첫 경험까지의 전환</b>을 봅니다. 전환의 기준은 언제나 <b>수거신청일</b>입니다 — 현업 쿼리는 월정액을 결제일로 보지만 실측 차이가 0.12%p 라 "이용" 이라는 이름에 맞는 쪽을 택했습니다. 관측이 덜 찬 기간은 자동으로 비워집니다.'],
+  ['가입자당 7일 주문(건)', '가입자 1명이 7일 안에 낸 수거신청 수. 전환율만으로는 안 보이는 <b>초기 사용 깊이</b>를 봅니다.']]],
+ ['⑧ 공장', [
+  ['{지표} · {공장명}', '⑤ 품질의 세 지표를 <b>공장별</b>로 쪼갠 것입니다. 공장은 <b>수거신청에 배정된 공장</b>(wash → lsf_factory_info)이라 캐파·리드타임 지표와 같은 기준입니다. 어느 공장의 값이 비어 있다면 그 공장의 QC 롤아웃이 아직 덜 된 것이니, ⑨ 진단의 <b>"QC 진행률 · 공장명"</b>을 보세요.']]]
+];
+
+
+/* ── 빌드 시 구워 넣은 데이터 ────────────────────────────────────
+   build_boards.py 가 아래 문자열에 CSV 를 base64 로 넣습니다.
+   비어 있으면(=직접 여는 경우) 지금까지처럼 업로드해서 씁니다.
+   BUILD_ID 가 바뀌면 지난번 업로드 캐시를 버립니다 — 새로 배포한 데이터가
+   옛 캐시에 가려지는 것을 막기 위해서입니다. */
+const BUILD_ID = '__BUILD_ID__';
+const BAKED = (function (b) {
+  if (!b) return '';
+  try {
+    const bin = atob(b), u = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    return new TextDecoder('utf-8').decode(u);
+  } catch (e) { return ''; }
+})('__BAKED_CSV__');
+
+let DATA = RAW.slice();
+let CUR = null, ONLY = false;
+
+const $ = id => document.getElementById(id);
+const nf = n => Math.round(n).toLocaleString('ko-KR');
+const pct = v => v == null ? '—' : (v > 0 ? '+' : '') + v.toFixed(1) + '%';
+const periods = () => [...new Set(DATA.map(r => r.p))].sort();
+const at = p => DATA.filter(r => r.p === p);
+const series = m => periods().map(p => {
+  const r = DATA.find(x => x.p === p && x.m === m); return r ? r.v : null; });
+const label = p => p.slice(2, 7).replace('-', '/');
+
+/* 지표별 표시 형식 */
+function fmt(m, v) {
+  if (v == null) return '—';
+  if (m.includes('원)')) return (v / 1e8).toFixed(1) + '억';
+  if (m.includes('%)')) return v.toFixed(2) + '%';
+  if (m.includes('일)')) return v.toFixed(2) + '일';
+  if (m.includes('만건당')) return v.toFixed(2) + '건';
+  if (m.includes('건)') && v < 10) return v.toFixed(2) + '건';
+  if (m.includes('점)') && v < 100) return v.toFixed(2) + '점';
+  if (m.includes('명)')) return nf(v) + '명';
+  if (m.includes('건)')) return nf(v) + '건';
+  if (m.includes('점)')) return nf(v) + '점';
+  return nf(v);
+}
+/* YoY 방향의 좋고 나쁨 — 낮을수록 좋은 지표는 반대로 읽는다 */
+const LOWER_BETTER = ['낙전 비율(%)', '세탁 불가(만건당)', '전체 리드타임 P90(일)',
+                      '무상포인트 할인율(%)', '세탁 부속품 비중(%)', '배송시각 결측(%) · 미완결 신호',
+                      'QC 부적합률(%)', '스파팅 못지움율(%)', '안심케어 인입률(%)',
+                      '스파팅 재세탁율(%)', '물량당 광고비(원)', '고객 획득 비용(원)'];
+function dirClass(m, y) {
+  if (y == null || Math.abs(y) < 0.5) return 'flat';
+  const lower = LOWER_BETTER.some(x => m === x || m.startsWith(x + ' ·'));
+  const good = lower ? y < 0 : y > 0;
+  return good ? 'up' : 'down';
+}
+
+/* 스파크라인 — 단일 계열이므로 범례 없음. 현재 기간 점만 강조 */
+function spark(m, curIdx) {
+  const vals = series(m), W = 104, H = 26, PAD = 3;
+  const ok = vals.filter(v => v != null);
+  if (ok.length < 2) return '<svg class="spark" width="' + W + '" height="' + H + '"></svg>';
+  const mn = Math.min(...ok), mx = Math.max(...ok), rng = (mx - mn) || 1;
+  const x = i => PAD + i * (W - 2 * PAD) / (vals.length - 1);
+  const y = v => H - PAD - (v - mn) / rng * (H - 2 * PAD);
+  let dPath = '', started = false;
+  vals.forEach((v, i) => { if (v == null) { started = false; return; }
+    dPath += (started ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1) + ' '; started = true; });
+  let dots = '';
+  vals.forEach((v, i) => { if (v == null) return;
+    const r = i === curIdx ? 3.2 : 0;
+    if (r) dots += `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="${r}"
+      fill="var(--s1)" stroke="var(--surface)" stroke-width="2"/>`;
+    dots += `<rect x="${(x(i) - 7).toFixed(1)}" y="0" width="14" height="${H}" fill="transparent"
+      data-m="${m}" data-i="${i}" class="hit"/>`; });
+  return `<svg class="spark" width="${W}" height="${H}" role="img" aria-label="${m} 추이">
+    <path d="${dPath}" fill="none" stroke="var(--s1)" stroke-width="2"
+      stroke-linejoin="round" stroke-linecap="round"/>${dots}</svg>`;
+}
+
+/* 값이 비어 있을 때 "왜 비었는지"를 칸 안에서 바로 알려준다.
+   가드로 일부러 비운 것을 사용자가 오류로 오해하지 않게 하기 위함 */
+const WAIT7  = ['가입 → 7일 내 첫 이용(%)', '가입자당 7일 주문(건)'];
+const WAIT15 = ['안심케어 인입률(%)'];
+const COVDEP = ['QC 부적합률(%)', '스파팅 못지움율(%)'];
+const hits = (list, m) => list.some(x => m === x || m.startsWith(x + ' ·'));
+
+function blankCell(r, rows) {
+  if (hits(WAIT7, r.m))
+    return `<span class="pend" title="가입 코호트를 7일 관측합니다. 이 기간은 아직 7일이 안 차서 쿼리가 비워둔 것입니다 — 낮게 찍혀 거짓 이탈로 잡히는 것을 막기 위해서입니다. 다음 기간 데이터를 받으면 채워집니다."><i>◷</i>관측 대기 · 7일</span>`;
+  if (hits(WAIT15, r.m))
+    return `<span class="pend" title="옷이 나간 뒤 안심케어 요청이 들어오기까지 15일을 기다립니다(실측 P90 6~11일). 이 기간은 아직 15일이 안 차서 분자가 덜 찬 상태라 비워둔 것입니다."><i>◷</i>관측 대기 · 15일</span>`;
+  if (hits(COVDEP, r.m)) {
+    const sfx = r.m.includes(' · ') ? r.m.slice(r.m.indexOf(' · ')) : '';
+    const cov = rows.find(x => x.m === 'QC 진행률(%)' + sfx)
+             || rows.find(x => x.m === 'QC 진행률(%)') || {};
+    if (cov.v != null && cov.v < 0.5)
+      return `<span class="pend" title="이 기간에는 QC 기록이 사실상 없습니다. QC 데이터는 2026-03 부터 쌓이기 시작했습니다."><i>○</i>데이터 없음</span>`;
+    return `<span class="pend" title="QC 진행률이 ${cov.v == null ? '기준' : cov.v.toFixed(1) + '%로 20%'} 미만입니다. 일부 의류에만 QC 하던 시기의 부적합률은 '문제 있어 보이는 옷만 골라 본 결과'라 전체 품질로 읽을 수 없어 비워둡니다."><i>◐</i>커버리지 미달</span>`;
+  }
+  return '—';
+}
+
+function badge(j) {
+  if (!j) return '<span style="color:var(--muted)">—</span>';
+  return j === '양호' ? '<span class="badge g"><i>●</i>양호</span>'
+                      : '<span class="badge b"><i>▲</i>이탈</span>';
+}
+
+function render() {
+  const P = periods(); if (!CUR || !P.includes(CUR)) CUR = P[P.length - 1];
+  const ci = P.indexOf(CUR), rows = at(CUR);
+  const get = m => rows.find(r => r.m === m) || {};
+  const outs = rows.filter(r => r.j === '이탈' && !isDiag(r));
+
+  /* 타일 */
+  const nsm = get('NSM · 세탁 물량(점)'), usr = get('활성 고객 수(순, 명)'), vpu = get('고객당 물량(점)');
+  $('tiles').innerHTML = [
+    { lab: 'NSM · 세탁 물량', val: fmt('(점)', nsm.v), d: nsm.y, m: 'NSM · 세탁 물량(점)',
+      note: '전년 동월 ' + fmt('(점)', nsm.vp) },
+    { lab: '활성 고객 수 (순)', val: fmt('(명)', usr.v), d: usr.y, m: '활성 고객 수(순, 명)',
+      note: '해당 기간 1건 이상' },
+    { lab: '고객당 물량', val: vpu.v == null ? '—' : vpu.v.toFixed(2) + '점', d: vpu.y, m: '고객당 물량(점)',
+      note: '전년 동월 ' + (vpu.vp == null ? '—' : vpu.vp.toFixed(2) + '점') },
+    { lab: '기준선 이탈', val: outs.length + '건', d: null, m: null,
+      note: outs.length ? outs.slice(0, 3).map(r => r.m.split('(')[0].trim()).join(' · ')
+                          + (outs.length > 3 ? ' 외 ' + (outs.length - 3) : '') : '전부 양호' }
+  ].map(t => `<div class="tile"><div class="lab">${t.lab}</div><div class="val">${t.val}</div>
+    <div class="dl ${t.m ? dirClass(t.m, t.d) : (outs.length ? 'down' : 'up')}">${
+      t.m ? (t.d > 0 ? '▲ ' : t.d < 0 ? '▼ ' : '') + pct(t.d)
+          : (outs.length ? '▲ 확인 필요' : '● 이상 없음')}</div>
+    <div class="note">${t.note}</div></div>`).join('');
+
+  /* 컨트롤 */
+  $('bar').innerHTML = P.map(p =>
+      `<button class="chip ${p === CUR ? 'on' : ''}" onclick="setP('${p}')">${label(p)}</button>`).join('')
+    + '<span class="sep"></span>'
+    + `<button class="chip tog ${ONLY ? 'on' : ''}" onclick="setOnly()">${
+        ONLY ? '▲ 이탈만 보는 중' : '이탈만 보기'}</button>`;
+
+  /* 경고 배너 — 신뢰성 먼저 */
+  const miss = rows.find(r => r.m.startsWith('배송시각 결측')) || {};
+  let al = '';
+  if (miss.v != null && miss.v >= 3) al += `<div class="box bad">
+    <h4><span class="pill">신뢰성</span>${label(CUR)}은 아직 미완결입니다</h4>
+    <p>배송 시각 결측률이 <b>${miss.v.toFixed(2)}%</b>입니다(정상 0.1%대). 아직 배송이 진행 중인 건들이라
+    <b>리드타임·준수율이 실제보다 좋게 나옵니다.</b> 다음 달 로그를 받은 뒤 다시 보세요.</p></div>`;
+  const newBlank  = rows.some(r => r.g.includes('신규') && r.m.includes('첫 이용') && r.v == null);
+  const careBlank = rows.some(r => r.m === '안심케어 인입률(%)' && r.v == null);
+  if (newBlank || careBlank) {
+    const which = [newBlank ? '⑦ 신규 코호트' : null, careBlank ? '안심케어 인입률' : null]
+                    .filter(Boolean).join(' · ');
+    al += `<div class="box warnb">
+    <h4><span class="pill">관측</span>${which}은 이번 기간이 아직 비어 있습니다</h4>
+    <p>${label(CUR)}은 관측 기간이 아직 안 찼습니다 — 가입 코호트는 <b>7일</b>,
+    안심케어는 옷이 나간 뒤 요청이 들어오기까지 <b>15일</b>을 기다립니다.
+    쿼리가 <b>자동으로 비워둡니다</b> — 낮게 찍혀 거짓 이탈로 잡히는 것을 막기 위해서입니다.
+    다음 기간 데이터를 받으면 채워집니다.</p></div>`;
+  }
+  const qcCov = rows.find(r => r.m === 'QC 진행률(%)') || {};
+  const qcBlank = rows.some(r => r.m === 'QC 부적합률(%)' && r.v == null);
+  if (qcBlank && qcCov.v != null) al += `<div class="box warnb">
+    <h4><span class="pill">커버리지</span>QC·스파팅 지표는 이번 기간이 비어 있습니다</h4>
+    <p>QC 진행률이 <b>${qcCov.v.toFixed(2)}%</b>입니다. QC 를 일부 의류에만 하고 있을 때의
+    부적합률은 <b>"문제 있어 보이는 옷만 골라 본 결과"</b>라 전체 품질로 읽을 수 없습니다.
+    쿼리가 <b>자동으로 비워둡니다.</b> 진행률이 20% 를 넘는 달부터 채워집니다.</p></div>`;
+  $('alerts').innerHTML = al;
+
+  /* 본문 */
+  const groups = [...new Set(DATA.filter(r => !isDiag(r)).map(r => r.g))].sort();
+  let html = '';
+  groups.forEach(g => {
+    let rs = rows.filter(r => r.g === g && !isDiag(r));
+    if (ONLY) rs = rs.filter(r => r.j === '이탈');
+    if (!rs.length) return;
+    html += `<div class="card"><div class="grpname">${g}</div><div class="tw"><table>
+      <thead><tr><th style="width:34%">지표</th><th>값</th><th>전년 동기</th><th>YoY</th>
+      <th style="width:112px">추이 (${P.length}${P.length>1&&P[1]&&P[0]&&(new Date(P[1])-new Date(P[0]))<12*864e5?'주':'개월'})</th><th style="text-align:left">기준선</th>
+      <th style="text-align:left;width:88px">판정</th></tr></thead><tbody>`;
+    rs.forEach(r => {
+      html += `<tr><td class="mname">${r.m}</td>
+        <td>${r.v == null ? blankCell(r, rows) : '<b>' + fmt(r.m, r.v) + '</b>'}</td>
+        <td style="color:var(--ink2)">${fmt(r.m, r.vp)}</td>
+        <td class="${dirClass(r.m, r.y)}">${pct(r.y)}</td>
+        <td>${spark(r.m, ci)}</td>
+        <td class="base">${r.b || '—'}</td>
+        <td style="text-align:left">${badge(r.j)}</td></tr>`;
+    });
+    const diag = rows.filter(r => isDiag(r) && !r.m.startsWith('배송시각 결측'));
+    if (g.includes('품질') && diag.length) {
+      html += '<div class="diag"><b>진단</b> ' + diag.map(r =>
+        `${r.m.replace(/\(.*\)/, '')} <b>${fmt(r.m, r.v)}</b>`).join(' · ')
+        + ' <span class="dnote">— 진행률이 흔들리면 부적합률·못지움율의 추세를 믿지 마세요. 미입력률이 오르면 못지움율의 표본이 줄어든 것입니다</span></div>';
+    }
+    html += '</tbody></table></div></div>';
+  });
+  $('body').innerHTML = html || '<div class="card"><p style="color:var(--ink2)">이탈한 지표가 없습니다.</p></div>';
+  $('foot').innerHTML = `기간 ${label(P[0])} ~ ${label(P[P.length - 1])} · 지표 ${
+    [...new Set(DATA.map(r => r.m))].length}종 · 전년 동기 자동 비교<br>
+    NSM = wash_item(accepted=1) − 세탁 부속품 − 세탁 불가 · 매출 = (실결제 + 충전포인트 + 매출성포인트) − 취소분 ·
+    준수율 = 세탁 완료일 ≤ 출고 기한<br>생성 <span id="gen"></span>`;
+  $('gen').textContent = new Date().toISOString().slice(0, 10);
+  renderDefs();
+  bindTips();
+}
+function renderDefs() {
+  const t = $('tdef'); if (!t || t.dataset.done) return;
+  t.innerHTML = '<thead><tr><th style="width:31%">지표</th><th style="text-align:left">무엇을 세는가</th></tr></thead><tbody>'
+    + DEF.map(([g, rows]) =>
+        `<tr><td class="g" colspan="2">${g}</td></tr>`
+        + rows.map(([m, d]) => `<tr><td class="mname">${m}</td><td>${d}</td></tr>`).join('')
+      ).join('') + '</tbody>';
+  t.dataset.done = '1';
+}
+function setP(p) { CUR = p; render(); }
+function setOnly() { ONLY = !ONLY; render(); }
+
+/* 스파크라인 호버 */
+function bindTips() {
+  const tip = $('tip'), P = periods();
+  document.querySelectorAll('.hit').forEach(el => {
+    el.addEventListener('mouseenter', e => {
+      const m = el.dataset.m, i = +el.dataset.i, v = series(m)[i];
+      if (v == null) return;
+      tip.textContent = label(P[i]) + '  ' + fmt(m, v);
+      tip.style.opacity = 1;
+    });
+    el.addEventListener('mousemove', e => {
+      tip.style.left = (e.clientX + 12) + 'px';
+      tip.style.top = (e.clientY - 30) + 'px';
+    });
+    el.addEventListener('mouseleave', () => { tip.style.opacity = 0; });
+  });
+}
+
+/* ── CSV 읽기 ───────────────────────────────────────────────── */
+function parseCsv(t) {
+  const rows = []; let cell = '', row = [], q = false;
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (q) { if (c === '"') { if (t[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(cell); cell = ''; }
+    else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+    else if (c !== '\r') cell += c;
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter(r => r.length > 1 && r.some(x => x.trim() !== ''));
+}
+function toRecords(text) {
+  const rows = parseCsv(text.replace(/^\uFEFF/, '').trim());
+  if (!rows.length) throw new Error('빈 파일');
+  const start = rows[0][0].includes('기간') ? 1 : 0;
+  const num = s => { const x = parseFloat(String(s).replace(/,/g, '')); return isNaN(x) ? null : x; };
+  const out = rows.slice(start).map(r => ({
+    p: (r[0] || '').trim(), g: (r[1] || '').trim(), m: (r[2] || '').trim(),
+    v: num(r[3]), vp: num(r[4]), y: num(r[5]),
+    b: (r[6] || '').trim() || null, j: (r[7] || '').trim() || null
+  })).filter(r => r.p && r.m);
+  if (!out.length) throw new Error('읽을 행이 없습니다');
+  if (!out.some(r => r.v != null)) throw new Error('숫자 컬럼을 찾지 못했습니다 — 컬럼 순서를 확인해 주세요');
+  return out;
+}
+/* UTF-8 우선, 실패하면 CP949(엑셀 한글) */
+function decode(buf) {
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+  catch (e) {
+    for (const enc of ['euc-kr', 'windows-949']) {
+      try { return new TextDecoder(enc).decode(buf); } catch (_) {}
+    }
+    return new TextDecoder('utf-8').decode(buf);   // 마지막 수단 (깨져도 표시)
+  }
+}
+function say(t, cls) { const m = $('msg'); m.textContent = t; m.className = cls || ''; }
+
+function merge(a, b) {                      // 같은 (기간·지표)는 새 값으로 덮어씀
+  const key = r => r.p + '|' + r.m, mp = new Map();
+  a.forEach(r => mp.set(key(r), r));
+  b.forEach(r => mp.set(key(r), r));
+  return [...mp.values()];
+}
+function apply(recs, label, add) {
+  DATA = add ? merge(DATA, recs) : recs; CUR = null;
+  const ps = [...new Set(DATA.map(r => r.p))];
+  say(`${label} · ${DATA.length}행 · ${ps.length}개 기간 · 지표 ${[...new Set(DATA.map(r => r.m))].length}종`, 'ok');
+  try { localStorage.setItem('nsm_sc', JSON.stringify({ recs: DATA, label, at: Date.now() })); } catch (e) {}
+  render();
+}
+function loadText(text, label) {
+  try { apply(toRecords(text), label || '붙여넣기'); }
+  catch (e) { say('읽기 실패 — ' + e.message, 'err'); }
+}
+function loadFile(f, add) {
+  if (!f) return;
+  if (!/\.(csv|txt)$/i.test(f.name)) { say('CSV 파일만 됩니다 (' + f.name + ')', 'err'); return; }
+  const rd = new FileReader();
+  rd.onload = () => { try { apply(toRecords(decode(rd.result)), f.name, add); }
+                      catch (e) { say('읽기 실패 — ' + e.message, 'err'); } };
+  rd.onerror = () => say('파일을 열지 못했습니다', 'err');
+  rd.readAsArrayBuffer(f);
+}
+function loadFiles(list) {                  // 여러 개를 한 번에 — 20번 + 23번 같이
+  const fs = [...list];
+  if (!fs.length) return;
+  fs.forEach((f, i) => setTimeout(() => loadFile(f, i > 0), i * 120));
+}
+function resetData() {
+  DATA = RAW.slice(); CUR = null;
+  try { localStorage.removeItem('nsm_sc'); } catch (e) {}
+  say('기본 데이터로 되돌렸습니다', ''); render();
+}
+
+/* 파일 선택 + 드래그앤드롭 */
+$('file').addEventListener('change', e => { loadFiles(e.target.files); e.target.value = ''; });
+const dz = $('drop');
+['dragenter', 'dragover'].forEach(ev => document.addEventListener(ev, e => {
+  if (!e.dataTransfer || ![...e.dataTransfer.types].includes('Files')) return;
+  e.preventDefault(); dz.classList.add('over');
+}));
+['dragleave', 'drop'].forEach(ev => document.addEventListener(ev, e => {
+  if (ev === 'drop') e.preventDefault();
+  if (ev === 'dragleave' && e.relatedTarget) return;
+  dz.classList.remove('over');
+}));
+document.addEventListener('drop', e => {
+  if (e.dataTransfer && e.dataTransfer.files.length) loadFiles(e.dataTransfer.files);
+});
+
+/* 지난번 업로드 복원 */
+/* 구워 넣은 데이터가 있으면 그것이 기본값입니다 */
+if (BAKED) { try { DATA = toRecords(BAKED); } catch (e) {} }
+/* 새 빌드면 지난번 업로드 캐시를 버립니다 */
+try {
+  const bid = localStorage.getItem('__build__nsm_sc');
+  if (BAKED && bid !== BUILD_ID) { localStorage.removeItem('nsm_sc'); localStorage.setItem('__build__nsm_sc', BUILD_ID); }
+} catch (e) {}
+(function () {
+  try {
+    const s = localStorage.getItem('nsm_sc');
+    if (!s) return;
+    const o = JSON.parse(s);
+    if (o && Array.isArray(o.recs) && o.recs.length) {
+      DATA = o.recs;
+      const d = new Date(o.at || Date.now()).toISOString().slice(0, 10);
+      say(`지난번 업로드 복원 (${o.label || 'CSV'} · ${d})`, 'ok');
+    }
+  } catch (e) {}
+})();
+
+render();
+</script>
+</body>
+</html>
