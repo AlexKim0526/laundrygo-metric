@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>지표 정의서</title>
+<style>
+:root{color-scheme:light;
+ --page:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;
+ --grid:#e1e0d9;--axis:#c3c2b7;--ring:rgba(11,11,11,.10);
+ --s1:#2a78d6;                      /* 이동평균 — categorical slot 1 */
+ --s2:#eb6834;                      /* 기간 값  — categorical slot 2 */
+ --good:#0ca30c;--warn:#fab219;--crit:#d03b3b;--goodtxt:#006300;
+ --gooddim:rgba(12,163,12,.10);--critdim:rgba(208,59,59,.10);--warndim:rgba(250,178,25,.13);
+ --band:rgba(11,11,11,.045);}
+@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){color-scheme:dark;
+ --page:#0d0d0d;--surface:#1a1a19;--ink:#fff;--ink2:#c3c2b7;--muted:#898781;
+ --grid:#2c2c2a;--axis:#383835;--ring:rgba(255,255,255,.10);
+ --s1:#3987e5;--s2:#d95926;--goodtxt:#0ca30c;
+ --gooddim:rgba(12,163,12,.16);--critdim:rgba(208,59,59,.18);--warndim:rgba(250,178,25,.16);
+ --band:rgba(255,255,255,.055);}}
+:root[data-theme="dark"]{color-scheme:dark;
+ --page:#0d0d0d;--surface:#1a1a19;--ink:#fff;--ink2:#c3c2b7;--muted:#898781;
+ --grid:#2c2c2a;--axis:#383835;--ring:rgba(255,255,255,.10);
+ --s1:#3987e5;--s2:#d95926;--goodtxt:#0ca30c;
+ --gooddim:rgba(12,163,12,.16);--critdim:rgba(208,59,59,.18);--warndim:rgba(250,178,25,.16);
+ --band:rgba(255,255,255,.055);}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;background:var(--page);
+ color:var(--ink);line-height:1.6;font-size:14px;word-break:keep-all;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1060px;margin:0 auto;padding:30px 22px 72px}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}
+h1{font-size:25px;font-weight:700;letter-spacing:-.4px;margin-top:6px;line-height:1.3}
+.lede{color:var(--ink2);font-size:13.5px;margin-top:8px;max-width:80ch}
+.sec{font-size:12px;font-weight:700;letter-spacing:.5px;color:var(--muted);margin:26px 0 9px;
+ text-transform:uppercase}
+.card{background:var(--surface);border:1px solid var(--ring);border-radius:14px;padding:18px 20px;margin-bottom:12px}
+.row{display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:center}
+.mhead{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:2px}
+.mname{font-size:15px;font-weight:700;letter-spacing:-.2px}
+.mval{font-size:34px;font-weight:700;letter-spacing:-.6px;line-height:1.15;margin:6px 0 2px;
+ font-variant-numeric:tabular-nums}
+.mval small{font-size:16px;font-weight:600;color:var(--ink2);margin-left:3px;letter-spacing:0}
+.mrow{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--ink2);
+ font-variant-numeric:tabular-nums;margin-top:4px}
+.mrow b{color:var(--ink)}
+.mnote{font-size:11.5px;color:var(--muted);margin-top:7px;line-height:1.55}
+.up{color:var(--goodtxt)}.down{color:var(--crit)}.flat{color:var(--muted)}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;
+ padding:3px 10px;border-radius:20px;white-space:nowrap}
+.badge.g{background:var(--gooddim);color:var(--goodtxt)}
+.badge.b{background:var(--critdim);color:var(--crit)}
+.badge.n{background:var(--page);color:var(--muted);border:1px solid var(--ring)}
+.badge i{font-style:normal;font-size:10px}
+.pill{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;border:1px solid var(--ring);
+ color:var(--ink2);background:var(--page);white-space:nowrap;font-variant-numeric:tabular-nums}
+.pill.w{border-color:var(--s1);color:var(--s1)}
+.legend{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.lg{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--ink2)}
+.sw{width:18px;height:3px;border-radius:2px;display:inline-block}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.gridline{stroke:var(--grid);stroke-width:1}
+.tick{fill:var(--muted);font-size:10px;font-variant-numeric:tabular-nums}
+.box{background:var(--surface);border:1px solid var(--ring);border-left:3px solid var(--s1);border-radius:12px;
+ padding:15px 17px;margin-bottom:12px}
+.box.bad{border-left-color:var(--crit)}.box.warnb{border-left-color:var(--warn)}
+.box h4{font-size:14px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.box p{color:var(--ink2);font-size:13.3px}.box p+p{margin-top:8px}
+.box b{color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{padding:7px 8px;text-align:right;border-bottom:1px solid var(--grid);
+ font-variant-numeric:tabular-nums;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--ink2);font-weight:600;font-size:11px}
+tbody tr:hover{background:var(--page)}
+td.wkc{font-weight:700}
+.tw{overflow-x:auto;max-height:430px;overflow-y:auto}
+details.det{margin-top:14px;border-top:1px solid var(--grid);padding-top:10px}
+/* 하위 지표 — 같은 그룹끼리 같은 음영. 홀수 그룹만 칠해 띠를 만듭니다 */
+tr.gband > td{background:var(--band)}
+tr.grow{cursor:default}
+tr.grow.has > td:first-child{cursor:pointer}
+tr.grow > td{border-top:1px solid var(--grid)}
+tr.grow > td:first-child{font-weight:700}
+tr.grow.has > td:first-child::before{content:'▸ ';color:var(--muted);font-weight:400}
+tr.grow.has.open > td:first-child::before{content:'▾ '}
+tr.child > td:first-child{padding-left:26px;color:var(--ink2)}
+tr.child[hidden]{display:none}
+td.note{color:var(--muted);font-size:11.5px;white-space:normal}
+summary.dsum{font-size:12.5px;font-weight:700;cursor:pointer;color:var(--ink2);list-style:none;
+ display:inline-flex;align-items:center;gap:6px}
+summary.dsum::-webkit-details-marker{display:none}
+summary.dsum::before{content:'▸';color:var(--muted);font-size:11px}
+details[open]>summary.dsum::before{content:'▾'}
+summary.dsum:hover{color:var(--ink)}
+.defsum{font-size:14px;font-weight:700;cursor:pointer;color:var(--ink);list-style:none}
+.defsum::-webkit-details-marker{display:none}
+.defsum::before{content:'▸ ';color:var(--muted)}
+details[open]>.defsum::before{content:'▾ '}
+.tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.tab{font-family:inherit;font-size:12.5px;font-weight:600;padding:5px 13px;border-radius:20px;
+ border:1px solid var(--ring);background:var(--surface);color:var(--ink2);cursor:pointer}
+.tab[aria-pressed="true"]{background:var(--ink);color:var(--page);border-color:var(--ink)}
+.drop{border:1.5px dashed var(--axis);border-radius:14px;background:var(--surface);
+ padding:20px 22px;margin-top:20px;transition:border-color .12s,background .12s}
+.drop.over{border-color:var(--s1);background:var(--page);border-style:solid}
+.dz-title{font-size:14.5px;font-weight:700;margin-bottom:4px}
+.dz-sub{color:var(--ink2);font-size:13px}
+.dz-row{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:13px}
+.dz-note{color:var(--muted);font-size:12px;margin-top:11px;line-height:1.6}
+#msg{font-size:12.5px;font-weight:600}
+#msg.ok{color:var(--goodtxt)} #msg.err{color:var(--crit)}
+.btn{display:inline-block;font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;
+ border:1px solid var(--ink);background:var(--ink);color:var(--page);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink2);border-color:var(--ring)}
+.btn.ghost:hover{border-color:var(--axis);color:var(--ink)}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;background:var(--page);
+ border:1px solid var(--ring);border-radius:5px;padding:1px 5px}
+footer{margin-top:34px;padding-top:18px;border-top:1px solid var(--grid);color:var(--muted);
+ font-size:12px;line-height:1.7}
+@media(max-width:860px){.row{grid-template-columns:1fr}.wrap{padding:22px 14px 56px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="eyebrow">런드리고 · 주간 지표점검 회의</div>
+<h1>지표 정의서</h1>
+<p class="lede">중요 지표는 펼치지 않아도 바로 보입니다. 각 카드의 <b>상세 보기</b>를 누르면 하위 지표가 열립니다.
+각 줄은 <b>관측 창이 다 찬 가장 최근 코호트</b>입니다 — 비어 있는 최근 기간은 아직 창이 안 찬 것이라 정상입니다.
+<b>직전 기간 대비는 읽지 마세요.</b> 수준은 <b>전년 동기</b>, 추세는 <b>이동평균</b>으로 봅니다.
+지표별 정의와 읽는 법은 <b>맨 아래에 한 번에</b> 모아 두었습니다.</p>
+
+<div id="alerts"></div>
+<div id="body"></div>
+
+<div class="card" style="margin-top:18px">
+<details><summary class="defsum">전체 기간 표</summary>
+<div style="margin-top:14px">
+  <div class="tabs" id="gtabs">
+    <button class="tab" type="button" data-g="주간" aria-pressed="true">주간</button>
+    <button class="tab" type="button" data-g="월간" aria-pressed="false">월간</button>
+  </div>
+  <div class="tw"><table id="tall"></table></div>
+</div>
+</details>
+</div>
+
+<div class="card">
+<details open><summary class="defsum">지표 설명 — 이 숫자가 정확히 무엇인가</summary>
+<div id="defbody" style="margin-top:14px"></div>
+</details>
+</div>
+
+<div id="drop" class="drop">
+  <div class="dz-title">결과 CSV 올리기</div>
+  <p class="dz-sub"><code>50_지표정의서_통합.sql</code> 결과를 CSV로 저장한 뒤
+    <b>여기에 끌어다 놓거나</b> 아래 버튼으로 선택하세요.</p>
+  <div class="dz-row">
+    <label class="btn" for="file">CSV 파일 선택</label>
+    <input type="file" id="file" accept=".csv,text/csv" hidden>
+    <button class="btn" onclick="exportBaked()" title="지금 올린 CSV 를 파일 안에 넣어 새 HTML 로 받습니다. 받는 사람은 열기만 하면 됩니다.">데이터 넣어 내보내기</button>
+    <button class="btn ghost" onclick="resetData()">비우기</button>
+    <span id="msg"></span>
+  </div>
+  <div class="dz-note">UTF-8 · CP949(엑셀 한글) 자동 인식 · 컬럼 <b>이름</b>으로 찾으므로 순서는 상관없습니다.<br>
+    CSV 를 올린 뒤 <b>데이터 넣어 내보내기</b> 를 누르면 <b>데이터가 들어 있는 HTML</b> 이 받아집니다.
+    그 파일을 공유하면 받는 사람은 <b>열기만</b> 하면 됩니다.</div>
+</div>
+
+<footer id="foot"></footer>
+</div>
+<script>
+/* ── 빌드/내보내기 시 구워 넣은 데이터 ────────────────────────────
+   비어 있으면 CSV 를 올려서 씁니다. BUILD_ID 가 바뀌면 지난 업로드 캐시를 버립니다. */
+const BUILD_ID = '__BUILD_ID__';
+const BAKED_B64 = '__BAKED_CSV__';
+const BAKED = (function (b) {
+  if (!b || b.indexOf('__') === 0) return '';
+  try {
+    const bin = atob(b), u = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    return new TextDecoder('utf-8').decode(u);
+  } catch (e) { return ''; }
+})(BAKED_B64);
+
+let DATA = [];
+let LAST_CSV = BAKED || '';
+let TAB = '주간';
+
+const $ = id => document.getElementById(id);
+const nf = n => n == null ? '—' : Math.round(n).toLocaleString('ko-KR');
+const p2 = v => v == null ? '—' : v.toFixed(2) + '%';
+const pp = v => v == null ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(2) + '%p';
+const pc = v => v == null ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(1) + '%';
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/* ══ 지표 구성 ══════════════════════════════════════════════════════
+   sel  : 한 줄을 그대로 가져옴   ·   sum : 여러 줄을 합쳐서 비율 재계산
+   kind : rate(비율) · count(사람 수) · amt(금액)                      */
+const K = (c, a, b) => ({ cat: c, d1: a, d2: b === undefined ? '' : b });
+
+const CARDS = [
+  { id: 'c1', name: '신규가입자', g: '주간', kind: 'count', lag: 0,
+    sel: K('1. 신규가입', '전체'),
+    cap: '그 주에 가입한 회원 수 — <b>탈퇴자 포함 전수</b> (LAUNDRY24 계정만 제외).',
+    tip: '모든 코호트 지표의 <b>분모</b>입니다. 여기가 흔들리면 아래 비율 해석이 전부 바뀝니다.',
+    subs: [] },
+
+  { id: 'c2', name: '첫 주문율 · 가입 후 7일', g: '주간', kind: 'rate', lag: 1,
+    sel: K('2. 주문', '첫 주문 (가입 후 7일)'),
+    cap: '가입 후 <b>7일</b> 안에 첫 수거신청. 분모는 <b>그 주 가입자</b>. 구독/자유 구분 없음.',
+    tip: '지연이 가장 짧아(2주 전 코호트) 획득·온보딩 액션의 <b>1차 확인용</b>입니다.',
+    subs: [] },
+
+  { id: 'c3', name: '2회차 주문율 · 첫 주문 후 28일', g: '주간', kind: 'rate', lag: 4,
+    sel: K('2. 주문', '2회차 주문 (첫 주문 후 28일)'),
+    cap: '첫 주문 후 <b>28일</b> 안에 2회차 수거신청. 분모는 <b>그 주에 역대 첫 수거신청을 한 사람</b>.',
+    tip: '<b>액션 효과 판정의 본 지표</b>입니다. 정확도와 속도의 교차점이라 판정은 이 줄로 합니다.',
+    subs: [K('2. 주문', '2회차 주문 · 조기 (14일)'),
+           K('2. 주문', '3회차 주문 (28일 · 조건부)'),
+           K('2. 주문', '앞당김 검증 (90일 2회차)')] },
+
+  { id: 'c4', name: '구독 가입자수', g: '주간', kind: 'count', lag: 0,
+    sel: K('4. 구독가입', '구독 가입자수'),
+    cap: '그 주에 <b>구독을 시작한 사람</b> 수 (기간 지표). 바로구독 + 써보고 구독 + 재구독의 합입니다.',
+    tip: '★ 이 줄은 <b>유량</b>입니다. 상세의 <b>현재 구독 유지</b>(저량)와 같이 보세요 — 많이 들어오는데 저량이 안 늘면 그만큼 빠지고 있다는 뜻입니다. 믹스(바로/써보고/재구독)는 서로 다른 액션이 움직입니다.',
+    subs: [], subsFrom: '4. 구독가입' },
+
+  { id: 'c5', name: '구독 잔존율 · 1회차까지 (누적) · 일반', g: '월간', kind: 'rate', lag: 2,
+    sel: K('5. 구독리텐션', '일반', '누적 · 1회차까지'),
+    cap: '그 달 첫 구독료 결제 코호트 중 <b>1회차 갱신까지 살아남은</b> 비율 (월구독).',
+    tip: '분모가 항상 <b>코호트 전체</b>라 2·3회차로 갈수록 반드시 내려갑니다. 상세에서 약정별·진입유형별로 나눠 보세요 — 재구독자는 이미 결제가 검증된 사람이라 잔존이 높습니다(상관 r=0.51).',
+    subs: [], subsFrom: '5. 구독리텐션' },
+
+  { id: 'c6', name: '결제금액 · 전체', g: '월간', kind: 'amt', lag: 0,
+    sel: K('6. 결제금액', '전체'),
+    cap: '그 달 결제 합계 = (실결제 + 충전포인트 + 매출성 포인트) − 취소분. <b>무상 포인트는 제외</b>.',
+    tip: '단가와 <b>반드시 같이</b> 보세요. 단가가 올라도 수거건수가 줄면 총량은 제자리입니다.',
+    subs: [K('6. 결제금액', '자유'), K('6. 결제금액', '구독')] },
+
+  { id: 'c7', name: '수거당 단가 · 전체', g: '월간', kind: 'amt', lag: 0,
+    sel: K('7. 수거당 단가', '전체'),
+    cap: '그 달 결제금액 ÷ 그 달 <b>수거신청 건수</b>. 자유는 세탁비+배송비, 구독은 구독료+초과금.',
+    tip: '구독은 <b>수거를 적게 할수록 단가가 올라갑니다</b>(낙전). 단가 상승이 늘 좋은 신호는 아닙니다.',
+    subs: [K('7. 수거당 단가', '자유'), K('7. 수거당 단가', '구독')] }
+];
+
+/* 상세에서 감추는 하위 지표 (쿼리에는 남아 있고 전체 기간 표에서도 뺍니다) */
+const HIDE = new Set([
+  '4. 구독가입§재구독§진단 · 공백 있음',
+  '4. 구독가입§현재 구독 유지§가입자수',
+  '4. 구독가입§진단 · 가입 후 전환§30일 내',
+  '4. 구독가입§진단 · 가입 후 전환§90일 내'
+]);
+
+/* 하위 지표 지정은 두 형태를 받습니다:
+     · 셀렉터 하나          { cat, d1, d2 }
+     · 여러 줄을 묶은 그룹  { sum:[셀렉터...], partial:true }  */
+const specOf = x => (!x ? null : (x.cat ? { sel: x } : x));
+const mainSel = x => { const sp = specOf(x); return sp ? (sp.sel || sp.sum[0]) : null; };
+
+/* 하위 지표 — subsFrom 이 있으면 CSV 에 실제로 있는 줄에서 만듭니다.
+   쿼리에 지표가 늘어도 보드를 고칠 필요가 없고, 없는 줄이 "확정 없음" 으로 뜨지도 않습니다.
+   대표 지표와 같은 줄은 빼므로 상세·전체표에 열이 중복되지 않습니다. */
+function subsOf(c) {
+  if (!c.subsFrom) return c.subs || [];
+  const head = c.sel ? kk(c.sel.cat, c.sel.d1, c.sel.d2) : null;
+  const seen = new Map();
+  DATA.forEach(r => {
+    if (r.cat !== c.subsFrom || r.g !== c.g) return;
+    const k = kk(r.cat, r.d1, r.d2);
+    if (k === head || seen.has(k) || HIDE.has(k)) return;
+    seen.set(k, { cat: r.cat, d1: r.d1, d2: r.d2, no: r.no == null ? 999 : r.no });
+  });
+  return [...seen.values()].sort((a, b) => (a.no - b.no) || a.d1.localeCompare(b.d1, 'ko'));
+}
+
+/* ══ 조회 도우미 ════════════════════════════════════════════════════ */
+const kk = (c, a, b) => c + '§' + a + '§' + (b || '');
+let IDX = new Map(), PER = { '주간': [], '월간': [] };
+
+function reindex() {
+  IDX = new Map(); PER = { '주간': [], '월간': [] };
+  const seen = { '주간': new Set(), '월간': new Set() };
+  DATA.forEach(r => {
+    IDX.set(r.g + '|' + r.p + '|' + kk(r.cat, r.d1, r.d2), r);
+    if (seen[r.g] && !seen[r.g].has(r.p)) { seen[r.g].add(r.p); PER[r.g].push(r.p); }
+  });
+  PER['주간'].sort(); PER['월간'].sort();
+}
+const get = (g, p, s) => IDX.get(g + '|' + p + '|' + kk(s.cat, s.d1, s.d2)) || null;
+
+/* 전년 동기 : 주간은 -364일(같은 요일), 월간은 -12개월 */
+function prevP(g, p) {
+  if (g === '주간') {
+    const d = new Date(p + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - 364);
+    return d.toISOString().slice(0, 10);
+  }
+  const y = +p.slice(0, 4), m = p.slice(5);
+  return (y - 1) + '-' + m;
+}
+const plabel = p => p.length > 7 ? p.slice(5).replace('-', '/') : p.slice(2);
+const MAW = g => (g === '주간' ? 4 : 3);
+
+/* 한 카드의 시계열. sum 이면 분자·분모를 더한 뒤 비율을 다시 계산합니다
+   (비율의 평균이 아니라 분자합÷분모합 — 기간마다 분모가 다르기 때문입니다). */
+function series(card, sel) {
+  const g = card.g, sp = specOf(sel);
+  const sels = sp ? (sp.sum || [sp.sel]) : (card.sum || [card.sel]);
+  /* partial = 확정된 하위만 모아 합칩니다. 약정 개월처럼 <b>확정 시점이 서로 다른</b>
+     줄을 묶을 때만 씁니다 — 하나라도 미확정이면 전부 비우는 기본 규칙으로는
+     플러스 합계가 영원히 비기 때문입니다. 대신 구성이 달의 흐름에 따라 바뀌므로
+     어떤 약정이 들어갔는지 표에 같이 적습니다. */
+  const partial = !!(sp && sp.partial);
+  return PER[g].map(p => {
+    let users = 0, den = 0, amt = 0, obs = 1, hit = 0, hasU = 0, hasD = 0, hasA = 0;
+    sels.forEach(s => {
+      const r = get(g, p, s);
+      if (!r || !r.obs) { if (!partial) obs = 0; return; }
+      hit++;
+      if (r.users != null) { users += r.users; hasU = 1; }
+      if (r.den   != null) { den   += r.den;   hasD = 1; }
+      if (r.amt   != null) { amt   += r.amt;   hasA = 1; }
+    });
+    if (!hit || !obs) return { p, v: null, users: null, den: null, amt: null, obs: 0 };
+    let v = null;
+    if (card.kind === 'rate')  v = hasD && den ? users / den * 100 : null;
+    else if (card.kind === 'count') v = hasU ? users : null;
+    else                        v = hasA ? amt : null;
+    return { p, v, users: hasU ? users : null, den: hasD ? den : null, amt: hasA ? amt : null, obs: 1 };
+  });
+}
+
+/* 이동평균 — 비율은 분자합÷분모합, 나머지는 값의 평균. 창 안이 모두 확정일 때만. */
+function withMa(S, card) {
+  const w = MAW(card.g);
+  return S.map((o, i) => {
+    if (i < w - 1) return { ...o, ma: null };
+    const win = S.slice(i - w + 1, i + 1);
+    if (win.some(x => x.v == null)) return { ...o, ma: null };
+    let ma;
+    if (card.kind === 'rate') {
+      const su = win.reduce((a, x) => a + x.users, 0), sd = win.reduce((a, x) => a + x.den, 0);
+      ma = sd ? su / sd * 100 : null;
+    } else ma = win.reduce((a, x) => a + x.v, 0) / w;
+    return { ...o, ma };
+  });
+}
+
+/* 전년 동기 · 오차범위 · 판정 */
+function judge(S, card) {
+  const M = new Map(S.map(o => [o.p, o]));
+  return S.map(o => {
+    const q = M.get(prevP(card.g, o.p)) || null;
+    const vp = q ? q.v : null;
+    let ci = null, dd = null, pctd = null, j = null;
+    if (o.v != null && vp != null) {
+      dd = o.v - vp;
+      pctd = vp ? (o.v - vp) / Math.abs(vp) * 100 : null;
+      if (card.kind === 'rate' && o.den && q.den) {
+        const a = o.v / 100, b = vp / 100;
+        ci = 1.96 * Math.sqrt(a * (1 - a) / o.den + b * (1 - b) / q.den) * 100;
+        j = Math.abs(dd) <= ci ? '노이즈' : (dd >= 0 ? '개선' : '악화');
+      } else {
+        /* 총량 지표는 이항분산 가정이 성립하지 않아 오차범위를 만들지 않습니다.
+           방향만 표시하고 "판정" 이라 부르지 않습니다. */
+        j = pctd == null ? null : (pctd >= 0 ? '증가' : '감소');
+      }
+    }
+    return { ...o, vp, dd, pctd, ci, j };
+  });
+}
+
+function build(card, sel) { return judge(withMa(series(card, sel), card), card); }
+const lastOk = S => { for (let i = S.length - 1; i >= 0; i--) if (S[i].v != null) return S[i]; return null; };
+
+function badge(j, kind) {
+  if (!j) return '<span class="badge n">—</span>';
+  if (j === '악화') return '<span class="badge b"><i>▼</i>악화</span>';
+  if (j === '개선') return '<span class="badge g"><i>▲</i>개선</span>';
+  if (j === '감소') return '<span class="badge b"><i>▼</i>감소</span>';
+  if (j === '증가') return '<span class="badge g"><i>▲</i>증가</span>';
+  return '<span class="badge n">노이즈 (범위 안)</span>';
+}
+/* 금액은 자릿수가 커서 그대로 쓰면 읽히지 않습니다.
+   총액(원)은 억/만으로 줄이고, 단가(원/수거)는 정확한 값이 중요하므로 그대로 둡니다. */
+function money(v, unit) {
+  if (v == null) return '—';
+  if (unit === '원/수거') return nf(v);
+  const a = Math.abs(v);
+  if (a >= 1e8) return (v / 1e8).toFixed(2) + '억';
+  if (a >= 1e4) return (v / 1e4).toFixed(0) + '만';
+  return nf(v);
+}
+function fmt(v, card, unit) {
+  if (v == null) return '—';
+  if (card.kind === 'rate') return v.toFixed(2) + '%';
+  if (card.kind === 'count') return nf(v);
+  return money(v, unit);
+}
+function unitOf(card, sel) {
+  const s = mainSel(sel) || card.sel || (card.sum || [])[0];
+  for (let i = PER[card.g].length - 1; i >= 0; i--) {
+    const r = get(card.g, PER[card.g][i], s);
+    if (r && r.unit) return r.unit;
+  }
+  return '';
+}
+
+/* 하위 지표는 대표 지표와 종류가 다를 수 있습니다(건수 아래에 비율, 비율 아래에 건수).
+   그래서 CSV 의 어느 칸이 채워져 있는지로 종류를 판별해 씁니다. */
+function effKind(c, s) {
+  if (!s) return c.kind;
+  const m = mainSel(s);
+  for (let i = PER[c.g].length - 1; i >= 0; i--) {
+    const r = get(c.g, PER[c.g][i], m);
+    if (!r) continue;
+    if (r.rate != null) return 'rate';
+    if (r.amt  != null) return 'amt';
+    if (r.users != null) return 'count';
+  }
+  return c.kind;
+}
+const cardFor = (c, s) => (s ? { ...c, kind: effKind(c, s) } : c);
+
+/* ══ 하위 지표 그룹 ═══════════════════════════════════════════════
+   같은 갈래끼리 묶어 음영으로 구분하고, 자식이 있는 그룹은 눌러서 펼칩니다.
+   구독리텐션만 구조가 달라 따로 만듭니다 — 요금제(일반/플러스)를 위로 올리고
+   그 아래에 신규/재구독 · 약정 개월을 답니다. */
+function retentionGroups(c) {
+  const rows = DATA.filter(r => r.cat === '5. 구독리텐션' && r.g === c.g);
+  const d1s = [...new Set(rows.map(r => r.d1))];
+  const labs = [...new Set(rows.map(r => r.d2))]
+    .filter(x => x.indexOf('누적') === 0).sort();
+  const plus = d1s.filter(x => x.indexOf('플러스') === 0)
+    .sort((a, b) => (parseInt(a.replace(/\D/g, ''), 10) || 0) - (parseInt(b.replace(/\D/g, ''), 10) || 0));
+  const entry = ['신규구독', '재구독'].filter(x => d1s.includes(x));
+  const out = [];
+  if (d1s.includes('일반')) labs.forEach(l => out.push({
+    label: '일반 · ' + l.replace('누적 · ', ''),
+    spec: K('5. 구독리텐션', '일반', l),
+    children: entry.map(e => ({ label: e, spec: K('5. 구독리텐션', e, l) }))
+  }));
+  if (plus.length) labs.forEach(l => out.push({
+    label: '플러스 · ' + l.replace('누적 · ', ''),
+    spec: { sum: plus.map(t => K('5. 구독리텐션', t, l)), partial: true },
+    children: plus.map(t => ({ label: t, spec: K('5. 구독리텐션', t, l) })),
+    note: '약정별 확정 시점이 달라 <b>확정된 약정만</b> 합산합니다 (분자합÷분모합)'
+  }));
+  return out;
+}
+/* 그 외 카드 — 1Depth 로 묶고, "전체" 가 있으면 그것을 그룹 대표 줄로 씁니다 */
+function genericGroups(c) {
+  const SB = subsOf(c);
+  const by = new Map();
+  SB.forEach(x => { if (!by.has(x.d1)) by.set(x.d1, []); by.get(x.d1).push(x); });
+  const out = [];
+  by.forEach((arr, d1) => {
+    const hi = arr.findIndex(x => x.d2 === '전체' || x.d2 === '');
+    const head = hi >= 0 ? arr[hi] : arr[0];
+    const kids = arr.filter(x => x !== head);
+    out.push({
+      label: head.d2 && head.d2 !== '전체' ? d1 + ' · ' + head.d2 : d1,
+      spec: head,
+      children: kids.map(x => ({ label: x.d2 || x.d1, spec: x }))
+    });
+  });
+  return out;
+}
+const groupsOf = c => (c.subsFrom === '5. 구독리텐션' ? retentionGroups(c) : genericGroups(c));
+
+/* ══ 차트 ═══════════════════════════════════════════════════════════ */
+function chart(S, unit) {
+  const H = 132, WD = 300, L = 46, R = 8, T = 10, B = 18;
+  const vs = S.map(o => o.v), ms = S.map(o => o.ma);
+  const ok = [...vs, ...ms].filter(v => v != null);
+  if (ok.length < 2) return '<div style="color:var(--muted);font-size:12px">그릴 값이 부족합니다</div>';
+  let lo = Math.min(...ok), hi = Math.max(...ok);
+  const pad = (hi - lo || Math.abs(hi) * 0.1 || 1) * 0.22; lo -= pad; hi += pad;
+  const span = hi - lo;
+  const mag = Math.pow(10, Math.floor(Math.log10(span / 3)));
+  let step = mag; [1, 2, 2.5, 5, 10].some(m => { if (mag * m >= span / 4) { step = mag * m; return true; } });
+  const tk = []; for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) tk.push(v);
+  /* 눈금 라벨은 <b>눈금 간격(step)</b>에 맞춰 자릿수를 정합니다.
+     값 크기로만 정하면 13,500 과 14,500 이 둘 다 "1.4만" 이 되어 눈금이 겹칩니다. */
+  const dec = step >= 1 ? 0 : step >= 0.1 ? 1 : 2;
+  const lbl = v => {
+    if (unit === '원') {
+      if (Math.abs(hi) >= 1e8) return (v / 1e8).toFixed(step >= 1e8 ? 0 : 1) + '억';
+      if (Math.abs(hi) >= 1e4) return (v / 1e4).toFixed(step >= 1e4 ? 0 : 1) + '만';
+    }
+    return v.toLocaleString('ko-KR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+  };
+  const x = i => L + i * (WD - L - R) / Math.max(1, S.length - 1);
+  const y = v => T + (H - T - B) * (1 - (v - lo) / span);
+
+  let s = `<svg viewBox="0 0 ${WD} ${H}" role="img" aria-label="기간 추이">`;
+  tk.forEach(t => { s += `<line class="gridline" x1="${L}" y1="${y(t).toFixed(1)}" x2="${WD - R}" y2="${y(t).toFixed(1)}"/>`
+    + `<text class="tick" x="${L - 6}" y="${y(t).toFixed(1)}" text-anchor="end" dominant-baseline="middle">${lbl(t)}</text>`; });
+  const path = (arr, col, w) => {
+    let d = '', st = false;
+    arr.forEach((v, i) => { if (v == null) { st = false; return; }
+      d += (st ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1) + ' '; st = true; });
+    return d ? `<path d="${d}" fill="none" stroke="${col}" stroke-width="${w}"
+      stroke-linejoin="round" stroke-linecap="round"/>` : '';
+  };
+  s += path(vs, 'var(--s2)', 1.2) + path(ms, 'var(--s1)', 2);
+  for (let i = vs.length - 1; i >= 0; i--) if (vs[i] != null) {
+    s += `<circle cx="${x(i).toFixed(1)}" cy="${y(vs[i]).toFixed(1)}" r="3.4"
+      fill="var(--s2)" stroke="var(--surface)" stroke-width="1.6"/>`; break; }
+  [0, Math.floor(S.length / 2), S.length - 1].forEach(i => {
+    s += `<text class="tick" x="${x(i).toFixed(1)}" y="${H - B + 13}" text-anchor="middle">${plabel(S[i].p)}</text>`; });
+  return s + '</svg>';
+}
+
+/* ══ 렌더 ═══════════════════════════════════════════════════════════ */
+function render() {
+  reindex();
+  if (!DATA.length) {
+    $('alerts').innerHTML = '';
+    $('body').innerHTML = `<div class="card"><p style="color:var(--ink2)">
+      아래에 <code>50_지표정의서_통합.sql</code> 결과 CSV 를 끌어다 놓으면 시작합니다.
+      정의만 먼저 보시려면 <b>맨 아래 「지표 설명」</b> 을 펼치세요.</p></div>`;
+    $('tall').innerHTML = ''; $('foot').innerHTML = '생성 ' + new Date().toISOString().slice(0, 10);
+    renderDefs(); return;
+  }
+
+  /* ── 이번 주 안건 : 비율 지표 중 최근 확정 4기간에서 3회 이상 악화 ── */
+  const alerts = [];
+  CARDS.filter(c => c.kind === 'rate').forEach(c => {
+    const S = build(c).filter(o => o.v != null).slice(-4);
+    const n = S.filter(o => o.j === '악화').length;
+    if (S.length >= 3 && n >= 3) alerts.push({ c, n, S });
+  });
+  let al = '';
+  if (alerts.length) {
+    al += `<div class="box bad"><h4><span class="pill">이번 주 안건</span>${
+      alerts.map(o => esc(o.c.name.split(' · ')[0])).join(' · ')}</h4>` +
+      alerts.map(o => `<p><b>${esc(o.c.name)}</b> — 최근 확정 ${o.S.length}기간 중 <b>${o.n}회 악화</b>
+        · 값 ${o.S.map(x => x.v.toFixed(1)).join(' → ')}
+        (전년비 ${o.S.map(x => pp(x.dd)).join(' → ')})</p>`).join('') +
+      `<p>해당 코호트 기간의 <b>액션</b>과 <b>분모(유입)</b> 변화를 먼저 확인하세요.
+       나머지 줄이 노이즈 범위라면 문제는 <b>이 단계에 국한</b>된 것입니다.</p></div>`;
+  } else {
+    al += `<div class="box"><h4><span class="pill">이번 주</span>연속 악화인 비율 지표가 없습니다</h4>
+      <p>전년 동기와 통계적으로 구분되지 않거나, 악화가 이어지지 않았습니다.
+      추세(이동평균) 방향만 확인하고 넘어가셔도 됩니다.</p></div>`;
+  }
+  /* 앞당김 검증 — 같은 코호트 주끼리만 비교합니다 (28일과 90일은 지연이 달라
+     "최신 확정" 끼리 견주면 서로 다른 주를 비교하게 됩니다) */
+  const c3 = CARDS.find(c => c.id === 'c3');
+  const S28 = build(c3), S90 = build(c3, K('2. 주문', '앞당김 검증 (90일 2회차)'));
+  const M90 = new Map(S90.map(o => [o.p, o]));
+  const pairs = S28.map(o => ({ p: o.p, a: o, b: M90.get(o.p) }))
+    .filter(o => o.b && o.a.dd != null && o.b.dd != null && Math.abs(o.a.dd) > 1.0).slice(-12);
+  if (pairs.length >= 4) {
+    const rs = pairs.map(o => o.b.dd / o.a.dd).sort((x, y) => x - y);
+    const ratio = rs.length % 2 ? rs[(rs.length - 1) / 2] : (rs[rs.length / 2 - 1] + rs[rs.length / 2]) / 2;
+    const span = `${plabel(pairs[0].p)}~${plabel(pairs[pairs.length - 1].p)} 주 · ${pairs.length}주`;
+    const down = pairs.filter(o => o.a.dd < 0).length > pairs.length / 2;
+    if (ratio > 1.15 && down) {
+      al += `<div class="box warnb"><h4><span class="pill">창 보정</span>28일 창이 하락을 <b>축소</b>해 보여주고 있습니다</h4>
+        <p>둘 다 확정된 코호트(${span})에서 <b>효과비 중앙값 ${ratio.toFixed(2)}</b> —
+        같은 주를 90일로 보면 <b>${ratio.toFixed(1)}배</b> 더 나쁩니다.
+        2회차 주문율이 "노이즈" 로 떠도 안심하시면 안 됩니다.</p></div>`;
+    } else if (ratio < 0.5) {
+      al += `<div class="box bad"><h4><span class="pill">앞당김</span>28일에서 보이는 변화가 90일에서 사라집니다</h4>
+        <p>둘 다 확정된 코호트(${span})에서 <b>효과비 중앙값 ${ratio.toFixed(2)}</b> —
+        <b>총량을 바꾼 게 아니라 시점만 옮긴 것</b>일 가능성이 높습니다.</p></div>`;
+    }
+  }
+  $('alerts').innerHTML = al;
+
+  /* ── 카드 ─────────────────────────────────────────────────────── */
+  let html = '', lastG = '';
+  CARDS.forEach(c => {
+    if (c.g !== lastG) { html += `<div class="sec">${c.g} 지표</div>`; lastG = c.g; }
+    const S = build(c), r = lastOk(S);
+    if (!r) {
+      html += `<div class="card"><div class="mhead"><span class="mname">${esc(c.name)}</span>
+        <span class="pill w">${c.g}</span></div>
+        <p class="mnote">아직 확정된 코호트가 없습니다 — 창이 차기까지 ${c.lag} ${c.g === '주간' ? '주' : '개월'} 이상 걸립니다.
+        CSV 에 해당 지표 행이 있는지도 확인해 주세요.</p></div>`;
+      return;
+    }
+    const noisy = r.j === '노이즈';
+    const dcls = r.dd == null ? 'flat' : noisy ? 'flat' : (r.dd >= 0 ? 'up' : 'down');
+    const unit = c.kind === 'rate' ? '' : unitOf(c);
+    html += `<div class="card">
+      <div class="row">
+        <div>
+          <div class="mhead"><span class="mname">${esc(c.name)}</span>
+            <span class="pill w">${c.g}</span>
+            <span class="pill">${r.p} 코호트</span>${badge(r.j, c.kind)}</div>
+          <div class="mval">${fmt(r.v, c, unit)}${unit ? `<small>${esc(unit)}</small>` : ''}</div>
+          <div class="mrow">
+            <span>${MAW(c.g)}${c.g === '주간' ? '주' : '개월'} 평균 <b>${fmt(r.ma, c, unit)}</b></span>
+            <span>전년 동기 <b>${fmt(r.vp, c, unit)}</b></span>
+            <span class="${dcls}">${c.kind === 'rate'
+              ? `차이 <b>${pp(r.dd)}</b> · 오차범위 ±${r.ci == null ? '—' : r.ci.toFixed(2)}%p`
+              : `전년비 <b>${pc(r.pctd)}</b>`}</span>
+            ${r.den != null ? `<span>분모 <b>${nf(r.den)}</b></span>` : ''}
+          </div>
+          <div class="mnote">${c.cap}<br>${c.tip}</div>
+        </div>
+        <div>
+          <div class="legend"><span class="lg"><i class="sw" style="background:var(--s2)"></i>기간 값</span>
+            <span class="lg"><i class="sw" style="background:var(--s1)"></i>${MAW(c.g)}${c.g === '주간' ? '주' : '개월'} 평균</span></div>
+          ${chart(S, unit)}
+        </div>
+      </div>
+      ${subTable(c)}
+    </div>`;
+  });
+  $('body').innerHTML = html;
+
+  renderTable();
+  const W = PER['주간'], M = PER['월간'];
+  $('foot').innerHTML =
+    `주간 ${W[0] || '—'} ~ ${W[W.length - 1] || '—'} (${W.length}주) · 월간 ${M[0] || '—'} ~ ${M[M.length - 1] || '—'} (${M.length}개월)<br>`
+    + `창이 안 찬 코호트는 비웁니다 — 비는 기간 = ceil(창÷7)주. 첫 주문 1 · 2회차 4 · 구독 전환 5 · 앞당김 13<br>`
+    + `수거신청 필터 <code>status not in (4,17)</code> · <code>laundry24_pgi is null</code> · 가입 모수는 전수(LAUNDRY24 계정만 제외)<br>`
+    + `생성 ${new Date().toISOString().slice(0, 10)}`;
+  renderDefs();
+}
+
+/* 상세 — 하위 지표 표 (그룹별 음영 + 펼침) */
+function metricRow(c, spec, cls, label, extra) {
+  const cc = cardFor(c, spec);
+  const S = build(cc, spec), r = lastOk(S), u = cc.kind === 'rate' ? '' : unitOf(c, spec);
+  if (!r) return `<tr class="${cls}"><td>${esc(label)}</td>
+    <td colspan="6" style="text-align:left;color:var(--muted)">확정된 코호트 없음</td></tr>`;
+  const col = r.j === '악화' || r.j === '감소' ? 'var(--crit)'
+            : r.j === '개선' || r.j === '증가' ? 'var(--goodtxt)' : 'inherit';
+  return `<tr class="${cls}"><td>${esc(label)}${extra ? ' <span style="font-weight:400;color:var(--muted)">' + extra + '</span>' : ''}</td>
+    <td>${r.p}</td>
+    <td style="color:${col};font-weight:600">${fmt(r.v, cc, u)}</td>
+    <td>${nf(r.den)}</td><td>${fmt(r.ma, cc, u)}</td><td>${fmt(r.vp, cc, u)}</td>
+    <td>${cc.kind === 'rate' ? pp(r.dd) + (r.ci != null ? ' ±' + r.ci.toFixed(1) : '') : pc(r.pctd)}</td></tr>`;
+}
+function subTable(c) {
+  const G = groupsOf(c);
+  if (!G.length) return '';
+  let n = 0, body = '';
+  G.forEach((g, gi) => {
+    const band = gi % 2 ? ' gband' : '';
+    const has = g.children && g.children.length ? ' has' : '';
+    const gid = c.id + '-' + gi;
+    n += 1 + (g.children ? g.children.length : 0);
+    body += metricRow(c, g.spec, 'grow' + has + band, g.label)
+              .replace('<tr class="', `<tr data-grp="${gid}" class="`);
+    (g.children || []).forEach(k => {
+      body += metricRow(c, k.spec, 'child' + band, k.label)
+                .replace('<tr class="', `<tr hidden data-of="${gid}" class="`);
+    });
+    if (g.note) body += `<tr hidden data-of="${gid}" class="child${band}">
+      <td colspan="7" class="note">${g.note}</td></tr>`;
+  });
+  return `<details class="det"><summary class="dsum">상세 보기 · ${G.length}개 그룹 · 하위 ${n}줄</summary>
+    <div class="tw" style="max-height:none;margin-top:10px"><table>
+    <thead><tr><th style="width:32%">하위 지표</th><th>최신 확정</th><th>값</th><th>분모</th>
+      <th>${MAW(c.g)}${c.g === '주간' ? '주' : '개월'} 평균</th><th>전년 동기</th>
+      <th>차이 / 전년비</th></tr></thead>
+    <tbody>${body}</tbody></table></div></details>`;
+}
+
+/* 전체 기간 표 */
+function renderTable() {
+  const g = TAB, P = PER[g];
+  const cols = [];
+  CARDS.filter(c => c.g === g).forEach(c => {
+    cols.push({ c, s: null, label: c.name.split(' · ')[0] });
+    /* 상세와 같은 그룹 순서로 열을 만듭니다 (대표 줄 → 자식 줄) */
+    groupsOf(c).forEach(g => {
+      cols.push({ c, s: g.spec, label: g.label.replace(/\s*\(.*?\)/g, '') });
+      (g.children || []).forEach(k => cols.push({ c, s: k.spec, label: (g.label.split(' · ')[0] + '·' + k.label).replace(/\s*\(.*?\)/g, '') }));
+    });
+  });
+  const CC = cols.map(o => cardFor(o.c, o.s));
+  const S = cols.map((o, i) => new Map(build(CC[i], o.s).map(x => [x.p, x])));
+  const U = cols.map((o, i) => (CC[i].kind === 'rate' ? '' : unitOf(o.c, o.s)));
+  let t = '<thead><tr><th>기간</th>' + cols.map(o => `<th>${esc(o.label)}</th>`).join('') + '</tr></thead><tbody>';
+  [...P].reverse().forEach(p => {
+    t += `<tr><td class="wkc">${p}</td>` + cols.map((o, i) => {
+      const r = S[i].get(p);
+      if (!r || r.v == null) return '<td style="color:var(--muted)">·</td>';
+      const col = r.j === '악화' || r.j === '감소' ? 'var(--crit)'
+                : r.j === '개선' || r.j === '증가' ? 'var(--goodtxt)' : 'inherit';
+      const v = CC[i].kind === 'rate' ? r.v.toFixed(1) : fmt(r.v, CC[i], U[i]);
+      return `<td style="color:${col}">${v}</td>`;
+    }).join('') + '</tr>';
+  });
+  $('tall').innerHTML = t + '</tbody>';
+}
+
+/* ══ 맨 아래 · 지표 설명 한 곳에 모음 ═══════════════════════════════ */
+const DEFS = [
+  ['공통 — 앵커가 셋입니다',
+   '지표마다 "언제부터 세는가" 가 다릅니다. 섞으면 다른 것을 재게 됩니다.<br>' +
+   '· <b>가입일 앵커</b> — 첫 주문율 · 구독 전환율. 분모 = 그 주 가입자<br>' +
+   '· <b>첫 주문일 앵커</b> — 2·3회차 · 앞당김 검증. 분모 = 그 주에 <b>역대 첫 수거신청</b>을 한 사람(가입 시점 무관)<br>' +
+   '· <b>첫 구독료 결제일 앵커</b> — 구독리텐션. 분모 = 그 달 첫 구독료 결제가 일어난 구독<br>' +
+   '재주문을 가입일에서 재면 첫 주문이 늦은 사람일수록 2회차 낼 시간이 줄어 <b>재주문 능력이 아니라 첫 주문 속도</b>를 재게 됩니다.'],
+  ['공통 — 비어 있는 최근 기간은 정상',
+   '관측 창이 안 찬 코호트를 억지로 채우면 최신 기간이 항상 "하락" 으로 잘못 읽힙니다. 그래서 비웁니다.<br>' +
+   '비는 기간 = <b>ceil(창÷7)주</b> — 첫 주문 1주 · 2·3회차 4주 · 구독 전환 5주 · 앞당김 13주.<br>' +
+   '구독리텐션은 <b>약정 만료 후 매월</b> — 일반 1회차는 약 1개월, 플러스 3개월 약정 1회차는 약 3개월 뒤에 확정됩니다.<br>' +
+   '<b>★ 모든 가드는 실행 당일을 제외합니다.</b> 당일 데이터는 아직 다 들어오지 않아 포함하면 같은 쿼리를 몇 시간 뒤에 돌렸을 때 값이 바뀝니다 ' +
+   '(실측: 2026-08 결제금액이 같은 날 두 번 실행에 30.08억 → 32.07억). 그래서 8월 값은 <b>9월 1일 이후</b>에야 나옵니다.'],
+  ['공통 — 직전 기간 대비는 읽지 마세요',
+   '주간 표본이 얇습니다. 2회차 28일 기준 <b>전주 대비 오차범위가 ±2.98%p</b> 입니다.<br>' +
+   '· <b>수준</b>은 전년 동기로 (차이와 오차범위를 같이 보세요)<br>· <b>추세</b>는 이동평균으로<br>' +
+   '판정이 <b>「노이즈 (범위 안)」</b> 이면 그 기간은 <b>변한 게 없습니다.</b> 회의에서 언급하지 마세요.'],
+  ['공통 — 이동평균은 비율의 평균이 아닙니다',
+   '<b>분자합 ÷ 분모합</b> 입니다(주간 4기간 · 월간 3기간). 기간마다 분모가 달라 비율을 단순 평균하면 가중이 틀립니다 — ' +
+   '같은 데이터로 31.43% vs 28.75%, <b>2.68%p</b> 까지 벌어집니다. 창 안이 <b>모두 확정</b>일 때만 값을 냅니다.'],
+  ['공통 — 총량 지표에는 오차범위를 만들지 않습니다',
+   '신규가입자 수 · 결제금액 · 수거당 단가는 비율이 아니라 총량이라 이항분산 가정이 성립하지 않습니다. ' +
+   '그래서 <b>「증가/감소」 방향과 전년비 %만</b> 표시하고 "판정" 이라 부르지 않습니다. 통계적 유의성이 필요하면 별도 설계가 필요합니다.'],
+
+  ['1. 신규가입',
+   '<b>분자</b> 그 주에 가입한 회원 수 · <b>분모</b> 없음 (총량)<br>' +
+   '<b>모수</b> 탈퇴자 포함 <b>전수</b>. LAUNDRY24(무인세탁소) 계정만 제외합니다.<br>' +
+   '<b>왜 탈퇴자를 넣나</b> — 탈퇴자를 빼면 분모가 "지금 시점의 생존자" 가 되어 시간이 지날수록 <b>과거 달의 값이 조용히 바뀝니다</b>(실측 최대 1.45%p). 코호트 분모는 고정돼야 합니다.'],
+  ['2. 주문 — 첫 주문 (가입 후 7일)',
+   '<b>분자</b> 가입일부터 7일 이내에 수거신청을 1건 이상 한 사람 · <b>분모</b> 그 주 가입자 (구독/자유 구분 없음)<br>' +
+   '<b>왜 7일인가</b> — 최종 전환의 <b>83%</b> 가 7일 안에 일어납니다. 30일로 늘리면 정확도는 조금 오르지만 최근 4~5주가 통째로 비어 주간 회의에서 볼 수 없게 됩니다.<br>' +
+   '<b>지연</b> 1주 (최신 확정 코호트는 2주 전)'],
+  ['2. 주문 — 2회차 주문 (첫 주문 후 28일) ★ 본 지표',
+   '<b>분자</b> 첫 수거신청일부터 28일 이내에 수거신청이 <b>2건 이상</b>인 사람 (같은 날 2건도 인정) · <b>분모</b> 그 주에 역대 첫 수거신청을 한 사람<br>' +
+   '<b>왜 28일인가</b> — 56일로 늘리면 정확도가 1.8%p 좋아지는데 <b>지연이 4주 더</b> 붙습니다. 14일로 줄이면 2주 빨라지지만 <b>최종의 1/3만</b> 잡습니다. 28일이 그 교차점입니다(41번 실측, 완결 코호트 16개).<br>' +
+   '<b>지연</b> 4주 (최신 확정 코호트는 5주 전) · 최종(180일) 대비 50.6% 포착'],
+  ['2. 주문 — 2회차 조기 (14일)',
+   '판정용이 아니라 <b>선행 신호용</b>입니다. 최종의 <b>33%</b> 만 잡으므로 <b>수준으로 읽으면 안 됩니다</b> — 방향만 보세요.<br>' +
+   '여기서 좋아 보이던 것이 28일에서 사라지면 그건 <b>앞당김</b>입니다.'],
+  ['2. 주문 — 3회차 주문 (28일 · 조건부) ★ 가드레일',
+   '<b>분자</b> 28일 내 수거신청 3건 이상 · <b>분모</b> 28일 내 <b>2건 이상</b>인 사람 (절대 도달률이 아니라 <b>조건부</b>)<br>' +
+   '<b>왜 조건부인가</b> — 액션이 2회차만 억지로 끌어올리면 절대 도달률보다 <b>이 비율이 먼저</b> 떨어집니다. 2회차가 오르는데 이게 떨어지면 순증은 생각보다 작습니다.<br>' +
+   '<b>주의</b> 분모가 작아(주 400명 안팎) 주간 오차범위가 ±7%p 수준입니다. <b>이동평균으로 · 월 1회만</b> 판정하세요.'],
+  ['2. 주문 — 앞당김 검증 (90일 2회차)',
+   '리마인드 푸시·쿠폰류는 재주문을 <b>늘리는 게 아니라 앞당기기만</b> 하는 일이 흔합니다. 그것을 잡는 줄입니다. <b>분기 1회</b>면 충분합니다.<br>' +
+   '<b>효과비 = (90일 전년비 차이) ÷ (28일 전년비 차이)</b> — 반드시 <b>같은 코호트 주</b>끼리 짝지어야 합니다(지연이 달라 "최신 확정" 끼리 견주면 다른 주를 비교하게 됩니다).<br>' +
+   '· <b>1 근처</b> → 진짜 증분. 그 액션을 늘리세요<br>· <b>0 근처</b> → 시점만 옮김. 총량은 그대로<br>' +
+   '· <b>음수</b> → 앞당기고 총량은 줄었습니다. 즉시 중단<br>· <b>1보다 큼</b> → 28일 창이 변화를 <b>과소평가</b> 중 (2026-08 실측 중앙값 1.37)'],
+  ['4. 구독가입 — 구독 가입자수 (그 주에 시작된 구독)',
+   '<b>분자</b> 그 주에 구독을 시작한 사람 수 · <b>분모</b> 없음 (총량) · <b>= 바로구독 + 써보고 구독 + 재구독</b><br>' +
+   '<b>왜 기간 지표인가</b> — 가입 코호트(가입 후 30일)로 보면 실제 구독 시작의 <b>25~42%</b> 만 잡힙니다(90일로 늘려도 30~49%). ' +
+   '구독은 가입하고 한참 뒤에 결정되기 때문입니다. 그래서 총량과 믹스는 <b>구독을 시작한 주</b> 기준으로 봅니다.<br>' +
+   '가입일 앵커 지표는 <b>진단 · 가입 후 전환</b> 으로 남겨 뒀습니다 — "신규 유입이 얼마나 빨리 구독으로 오는가" 이지 총량이 아닙니다.'],
+  ['4. 구독가입 — 믹스 (바로 / 써보고 / 재구독)',
+   '셋의 <b>분모가 같습니다</b>(그 주 구독 시작 전체). 그래서 비중이 100% 로 떨어지고, 서로 더하거나 뺄 수 있습니다. ' +
+   '상세 표에서 <b>같은 음영</b>이 한 갈래이고, 갈래 이름을 누르면 일반/플러스가 열립니다.<br>' +
+   '<b>주의</b> — 플러스는 2026-01 출시라 <b>전년 동기가 0%</b> 입니다. 그 줄의 "+n%p 개선" 은 신규 출시 효과이지 개선이 아닙니다.<br>' +
+   '<b>바로구독</b> 구독 시작 <b>전에 수거신청 이력이 없는</b> 경우 — 가격·랜딩·프로모션이 움직입니다.<br>' +
+   '<b>써보고 구독</b> 수거신청을 <b>먼저 해본 뒤</b> 구독 — 첫 세탁 경험(품질·리드타임)이 움직입니다.<br>' +
+   '<b>재구독</b> 그 유저의 <b>두 번째 이상</b> 구독. 2026-08 실측 <b>70% 안팎</b>이고, 그중 <b>92~95%</b>는 직전 구독과 14일 이상 공백이 있는 <b>진짜 해지 후 재가입</b>입니다(진단 줄). ' +
+   '즉 런드리고 구독은 연속 유지형이 아니라 <b>필요할 때 켜고 끄는 on/off 형</b>이고, 신규 획득만큼 <b>재활성화(win-back)</b> 가 큰 레버입니다.<br>' +
+   '<b>일반 / 플러스</b> 는 약정 여부입니다(3·6·12개월). 플러스는 2026-01 출시입니다.'],
+  ['4. 구독가입 — 현재 구독 유지 ★ 저량',
+   '그 주 <b>마지막 날</b>에 구독료 결제가 아직 커버하고 있는 사람 수입니다. 위의 구독 가입자수가 <b>유량</b>이라면 이건 <b>저량</b>입니다.<br>' +
+   '<b>둘을 같이 보는 이유</b> — 유량이 유지되는데 저량이 안 늘면 들어오는 만큼 빠지고 있다는 뜻입니다. ' +
+   '유량만 보면 "가입은 잘 되고 있다" 로 읽히지만 사업은 제자리입니다.<br>' +
+   '판정 기준은 <b>마지막 결제일 + 약정 개월 + 유예 14일</b> 이 그 주말을 지나는지입니다.<br>' +
+   '쿼리는 <b>가입자수</b>와 <b>구독수</b> 둘 다 내지만 보드에는 <b>구독수</b>만 띄웁니다 — 한 사람이 구독을 두 개 들고 있는 경우가 드물어 두 값이 거의 같습니다. ' +
+   '가입자수가 필요하면 CSV 에 그대로 들어 있습니다.'],
+  ['5. 구독리텐션 — ★ 누적 잔존율만 냅니다',
+   '<b>누적 N회차까지</b> = N번째 갱신 결제까지 살아남은 구독 ÷ <b>그 달 코호트 전체</b><br>' +
+   '분모가 항상 코호트 전체라 회차가 갈수록 <b>반드시 내려갑니다.</b> 회의에서 "얼마나 남았나" 를 말할 때 쓰는 숫자입니다.<br>' +
+   '<b>회차별 조건부(=갱신률)는 노출하지 않습니다.</b> 조건부는 분모가 "직전 회차 생존자" 라 회차가 갈수록 <b>올라가는 게 정상</b>이고(생존자 편향), ' +
+   '그대로 보면 "3회차가 는다" 로 오독됩니다. 필요하면 누적끼리 나누면 복원됩니다 — <code>조건부 N = 누적N ÷ 누적N−1</code>.<br>' +
+   '<b>분자</b> N번째 갱신 <b>결제가 실제로 승인</b>된 구독. "해지 안 함" 으로 세면 결제 실패·유예 중인 건까지 유지로 잡혀 실제보다 높게 나옵니다.<br>' +
+   '<b>★ 관측 가드</b> 갱신 예정 시점 = <b>약정 만료 후 매월</b>(<code>add_months</code>) + 유예 14일. 플러스도 약정이 끝나면 1개월 구독으로 갱신됩니다(현업 확인).<br>' +
+   '<b>★ 회차는 결제 건수가 아니라 결제 주기(25일 버킷)</b> 로 셉니다. 약정 일괄결제가 여러 행으로 남거나 재시도 성공 행이 쌓이면 건수 기준 회차가 부풀어 과대평가됩니다.<br>' +
+   '<b>★ 약정별로 나눕니다</b>(플러스 3·6·12개월). 확정 시점이 달라서 한 덩어리로 묶으면 <b>12개월 약정 한 명 때문에 그 달 전체가 미확정</b>이 됩니다.<br>' +
+   '<b>★ 진입유형(신규구독/재구독)</b> 은 <b>일반 월구독만</b> 봅니다. 재구독자는 이미 결제가 검증된 사람이라 잔존이 높습니다 — ' +
+   '월별 재구독 비중과 1회차 잔존율의 상관이 <b>r = 0.51</b> 이라, 나눠 놓지 않으면 <b>구성이 바뀐 것</b>을 <b>리텐션이 변한 것</b>으로 읽게 됩니다. ' +
+   '요금제별과 진입유형별은 같은 모수를 다르게 자른 것이라 <b>더하면 안 됩니다.</b>'],
+  ['6. 결제금액 (월간)',
+   '<b>결제금액 = (실결제 + 충전포인트 사용분 + 매출성 포인트) − (취소분 + 취소 충전포인트)</b><br>' +
+   '· 충전포인트는 고객이 현금 주고 산 것이라 매출로 인정합니다<br>· <b>무상·프로모션 포인트는 제외</b>합니다 (현업 원본 쿼리의 의도적 설계)<br>' +
+   '<b>자유</b> 세탁비 + 배송비 · <b>구독</b> 구독료 + 초과금<br>' +
+   '<b>팬아웃 주의</b> — 결제 행과 수거 행을 직접 조인하면 자유 주문 1건에 결제행이 2건일 때 금액이 2배가 됩니다. 이 쿼리는 결제는 결제끼리, 수거는 수거끼리 집계한 뒤 1:1 로만 붙입니다.'],
+  ['7. 수거당 단가 (월간)',
+   '<b>그 달 결제금액 ÷ 그 달 수거신청 건수</b> (수거신청 = wash 1행, <code>status not in (4,17)</code> · <code>laundry24_pgi is null</code>)<br>' +
+   '· <b>자유</b> 총 결제금액(세탁비·배송비) ÷ 수거신청 회수<br>· <b>구독</b> 총 결제금액(구독료·초과금) ÷ 수거신청 회수<br>' +
+   '<b>해석 주의</b> — 구독은 수거를 <b>적게 할수록 단가가 올라갑니다</b>(낙전). 단가 상승이 늘 좋은 신호는 아니니 <b>결제금액 총량과 반드시 같이</b> 보세요.'],
+  ['회의에서 읽는 순서 (10분)',
+   '① <b>신규가입자</b> — 여기가 흔들리면 아래 비율 해석이 전부 바뀝니다<br>' +
+   '② <b>첫 주문율</b> — 가장 빨리(2주) 도는 지표. 획득·온보딩 1차 확인<br>' +
+   '③ <b>2회차 주문율</b> — 액션 효과 판정의 본 지표. 3회차 가드레일이 같이 떨어졌는지 확인<br>' +
+   '④ <b>구독 전환율</b> — 바로구독과 써보고 구독을 <b>나눠서</b><br>' +
+   '⑤ <b>구독리텐션 1회차</b> — 매출로 이어지는 관문 (월 1회)<br>' +
+   '⑥ <b>결제금액 · 단가</b> — 둘을 같이. 단가만 올라가면 총량은 제자리입니다<br>' +
+   '첫 주문율과 2회차의 방향이 갈리면 원인이 갈립니다 — <b>첫 주문 ↓ · 2회차 →</b> 는 획득 문제(유입의 질/온보딩 마찰), <b>첫 주문 → · 2회차 ↓</b> 는 경험 문제(첫 세탁 만족도/가격/리드타임)입니다.']
+];
+function renderDefs() {
+  const t = $('defbody'); if (!t || t.dataset.done) return;
+  t.innerHTML = '<div class="tw" style="max-height:none"><table><thead><tr>'
+    + '<th style="width:26%">지표</th><th style="text-align:left">정의 · 읽는 법</th></tr></thead><tbody>'
+    + DEFS.map(([a, b]) => `<tr><td style="font-weight:600;color:var(--ink);vertical-align:top;white-space:normal">${a}</td>
+        <td style="text-align:left;color:var(--ink2);white-space:normal;line-height:1.65">${b}</td></tr>`).join('')
+    + '</tbody></table></div>';
+  t.dataset.done = '1';
+}
+
+/* ══ CSV ════════════════════════════════════════════════════════════ */
+function parseCsv(t) {
+  const rows = []; let cell = '', row = [], q = false;
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (q) { if (c === '"') { if (t[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(cell); cell = ''; }
+    else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+    else if (c !== '\r') cell += c;
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter(r => r.length > 1 && r.some(x => x.trim() !== ''));
+}
+function toRecords(text) {
+  const rows = parseCsv(text.replace(/^﻿/, '').trim());
+  if (!rows.length) throw new Error('빈 파일');
+  const hdr = rows[0].map(c => (c || '').trim());
+  const col = nm => hdr.findIndex(h => h === nm);
+  const IX = { g: col('기간구분'), p: col('기간'), no: col('No'), cat: col('대분류'),
+               d1: col('1Depth'), d2: col('2Depth'), users: col('이용자수'), den: col('분모'),
+               rate: col('이용률(%)'), amt: col('금액'), unit: col('단위'), obs: col('확정') };
+  if (IX.g < 0 || IX.p < 0 || IX.cat < 0 || IX.d1 < 0)
+    throw new Error('50번 결과 CSV 가 아닙니다 — "기간구분 · 기간 · 대분류 · 1Depth" 컬럼이 필요합니다');
+  const num = s => { const x = parseFloat(String(s).replace(/,/g, '')); return isNaN(x) ? null : x; };
+  const g = (r, i) => (i >= 0 ? (r[i] || '').trim() : '');
+  const out = rows.slice(1).map(r => ({
+    g: g(r, IX.g), p: g(r, IX.p), no: num(g(r, IX.no)),
+    cat: g(r, IX.cat), d1: g(r, IX.d1), d2: g(r, IX.d2),
+    users: num(g(r, IX.users)), den: num(g(r, IX.den)), rate: num(g(r, IX.rate)),
+    amt: num(g(r, IX.amt)), unit: g(r, IX.unit),
+    obs: IX.obs >= 0 ? (num(g(r, IX.obs)) === 0 ? 0 : 1) : 1
+  })).filter(r => r.p && r.cat && (r.g === '주간' || r.g === '월간'));
+  if (!out.length) throw new Error('읽을 행이 없습니다');
+  return out;
+}
+function decode(buf) {
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+  catch (e) {
+    for (const enc of ['euc-kr', 'windows-949']) { try { return new TextDecoder(enc).decode(buf); } catch (_) {} }
+    return new TextDecoder('utf-8').decode(buf);
+  }
+}
+function say(t, cls) { const m = $('msg'); m.textContent = t; m.className = cls || ''; }
+function apply(recs, label) {
+  DATA = recs; reindex();
+  say(`${label} · ${DATA.length}행 · 주간 ${PER['주간'].length}주 · 월간 ${PER['월간'].length}개월`, 'ok');
+  try { localStorage.setItem('metric_def', JSON.stringify({ recs: DATA, label, at: Date.now() })); } catch (e) {}
+  render();
+}
+function loadFile(f) {
+  if (!f) return;
+  if (!/\.(csv|txt)$/i.test(f.name)) { say('CSV 파일만 됩니다 (' + f.name + ')', 'err'); return; }
+  const rd = new FileReader();
+  rd.onload = () => { try { const t = decode(rd.result); LAST_CSV = t; apply(toRecords(t), f.name); }
+                      catch (e) { say('읽기 실패 — ' + e.message, 'err'); } };
+  rd.onerror = () => say('파일을 열지 못했습니다', 'err');
+  rd.readAsArrayBuffer(f);
+}
+
+/* ══ 데이터를 품은 HTML 로 내보내기 ═════════════════════════════════ */
+function b64utf8(str) {
+  const u = new TextEncoder().encode(str);
+  let bin = '';
+  for (let i = 0; i < u.length; i += 0x8000) bin += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+function exportBaked() {
+  if (!LAST_CSV || !LAST_CSV.trim()) { say('먼저 CSV 를 올려주세요', 'err'); return; }
+  const IDS = ['alerts', 'body', 'tall', 'defbody', 'foot', 'msg'];
+  const keep = {};
+  IDS.forEach(i => { const el = $(i); if (el) { keep[i] = el.innerHTML; el.innerHTML = ''; } });
+  const dt = $('defbody'); const done = dt && dt.dataset.done;
+  if (dt) delete dt.dataset.done;
+  let html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+  IDS.forEach(i => { const el = $(i); if (el && keep[i] != null) el.innerHTML = keep[i]; });
+  if (dt && done) dt.dataset.done = done;
+
+  const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
+  html = html.replace(/const BAKED_B64 = '[^']*';/, "const BAKED_B64 = '" + b64utf8(LAST_CSV) + "';")
+             .replace(/const BUILD_ID = '[^']*';/, "const BUILD_ID = '" + stamp + "';");
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
+  a.download = '지표정의서_' + stamp.slice(0, 8) + '.html';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  say('내보냈습니다 — 이 파일은 열기만 하면 바로 보입니다', 'ok');
+}
+function resetData() {
+  DATA = []; LAST_CSV = '';
+  try { localStorage.removeItem('metric_def'); } catch (e) {}
+  say('비웠습니다', ''); render();
+}
+
+$('file').addEventListener('change', e => { loadFile(e.target.files[0]); e.target.value = ''; });
+/* 그룹 펼침 — 행에 id 를 쓰지 않고 data 속성으로만 묶어 내보내기에 영향이 없게 합니다 */
+$('body').addEventListener('click', e => {
+  const tr = e.target.closest('tr.grow.has');
+  if (!tr) return;
+  const id = tr.dataset.grp, open = tr.classList.toggle('open');
+  tr.closest('tbody').querySelectorAll(`tr[data-of="${id}"]`).forEach(x => { x.hidden = !open; });
+});
+$('gtabs').addEventListener('click', e => {
+  const b = e.target.closest('.tab'); if (!b) return;
+  TAB = b.dataset.g;
+  [...$('gtabs').children].forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  renderTable();
+});
+const dz = $('drop');
+['dragenter', 'dragover'].forEach(ev => document.addEventListener(ev, e => {
+  if (!e.dataTransfer || ![...e.dataTransfer.types].includes('Files')) return;
+  e.preventDefault(); dz.classList.add('over');
+}));
+['dragleave', 'drop'].forEach(ev => document.addEventListener(ev, e => {
+  if (ev === 'drop') e.preventDefault();
+  if (ev === 'dragleave' && e.relatedTarget) return;
+  dz.classList.remove('over');
+}));
+document.addEventListener('drop', e => { if (e.dataTransfer && e.dataTransfer.files.length) loadFile(e.dataTransfer.files[0]); });
+
+if (BAKED) { try { DATA = toRecords(BAKED); } catch (e) {} }
+try {
+  const bid = localStorage.getItem('__build__metric_def');
+  if (BAKED && bid !== BUILD_ID) { localStorage.removeItem('metric_def'); localStorage.setItem('__build__metric_def', BUILD_ID); }
+} catch (e) {}
+(function () {
+  try {
+    const s = localStorage.getItem('metric_def');
+    if (!s) return;
+    const o = JSON.parse(s);
+    if (o && Array.isArray(o.recs) && o.recs.length) {
+      DATA = o.recs;
+      say(`지난번 업로드 복원 (${o.label || 'CSV'} · ${new Date(o.at || Date.now()).toISOString().slice(0, 10)})`, 'ok');
+    }
+  } catch (e) {}
+})();
+
+render();
+</script>
+</body>
+</html>
